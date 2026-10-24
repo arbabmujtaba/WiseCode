@@ -34,6 +34,16 @@ const runnerError = (error) => {
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Results are fetched base64-encoded: Judge0 returns HTTP 400 for plain-text results whose
+// output is not valid UTF-8 (e.g. gcc diagnostics with curly quotes).
+const TEXT_FIELDS = ['stdin', 'expected_output', 'stdout', 'stderr', 'compile_output', 'message', 'source_code'];
+const decode = (result) => {
+  for (const f of TEXT_FIELDS) {
+    if (typeof result[f] === 'string') result[f] = Buffer.from(result[f], 'base64').toString('utf8');
+  }
+  return result;
+};
+
 const submitBatch = async (submissions) => {
   try {
     const { data } = await axios.post(
@@ -53,14 +63,14 @@ const waitForResults = async (tokens) => {
     let data;
     try {
       ({ data } = await axios.get(BATCH_URL, {
-        params: { tokens: tokens.join(','), base64_encoded: 'false', fields: '*' },
+        params: { tokens: tokens.join(','), base64_encoded: 'true', fields: '*' },
         headers: headers(),
         timeout: 20000,
       }));
     } catch (error) {
       throw runnerError(error);
     }
-    if (data?.submissions?.every((r) => r && r.status_id > 2)) return data.submissions;
+    if (data?.submissions?.every((r) => r && r.status_id > 2)) return data.submissions.map(decode);
     await sleep(POLL_INTERVAL_MS);
   }
   throw httpError(504, 'Code execution timed out. Please try again.', { expose: true });
