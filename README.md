@@ -1,6 +1,6 @@
 # WiseCode
 
-A coding-practice platform: solve DSA problems in the browser, run and submit code against real test cases, and get help from an AI tutor by text or real-time voice.
+A coding-practice platform: solve DSA problems in the browser, run and submit code against real test cases, and get help from an AI tutor by text or real time voice.
 
 ```text
 backend/    Express API, MongoDB, Redis, Judge0, Gemini (text + Live voice), Cloudinary
