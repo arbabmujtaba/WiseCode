@@ -1,7 +1,7 @@
 // Real-time voice tutor: a WebSocket proxy between the browser and the Gemini Live API.
 //
 // The Gemini API key never leaves the server. The browser connects to
-//   ws(s)://<api>/ai/live?problemId=<id>
+//   ws(s)://<host>/api/ai/live?problemId=<id>
 // authenticated by the normal session cookie, then exchanges:
 //
 // browser -> server
@@ -323,13 +323,13 @@ class VoiceSession {
   }
 }
 
-// Attaches the /ai/live WebSocket endpoint to an existing HTTP server.
+// Attaches the /api/ai/live WebSocket endpoint to an existing HTTP server.
 const attachVoiceServer = (server) => {
   const wss = new WebSocket.WebSocketServer({ noServer: true, maxPayload: 256 * 1024 });
 
   server.on('upgrade', async (req, socket, head) => {
     const url = new URL(req.url, 'http://localhost');
-    if (url.pathname !== '/ai/live') return rejectUpgrade(socket, 404, 'Not Found');
+    if (url.pathname !== '/api/ai/live') return rejectUpgrade(socket, 404, 'Not Found');
     if (!isAllowedOrigin(req.headers.origin)) return rejectUpgrade(socket, 403, 'Forbidden origin');
     if (!env.gemini.key) return rejectUpgrade(socket, 503, 'Voice tutor is not configured');
 

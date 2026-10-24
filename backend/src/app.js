@@ -1,4 +1,6 @@
 // Express application: middleware and routes (no network listeners here).
+const fs = require('fs');
+const path = require('path');
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
@@ -21,7 +23,16 @@ app.get('/health', (req, res) => {
   res.json({ ok: mongo && redisClient.isReady, mongo, redis: redisClient.isReady });
 });
 
-app.use(routes);
+app.use('/api', routes);
+
+// Single-service deploy: serve the built frontend (frontend/dist) when it exists.
+const distDir = path.resolve(__dirname, '../../frontend/dist');
+if (fs.existsSync(path.join(distDir, 'index.html'))) {
+  app.use('/assets', express.static(path.join(distDir, 'assets'), { immutable: true, maxAge: '1y' }));
+  app.use(express.static(distDir, { index: false }));
+  // SPA fallback: any other GET outside /api renders the React app.
+  app.get(/^\/(?!api(\/|$)).*/, (req, res) => res.sendFile(path.join(distDir, 'index.html')));
+}
 
 app.use(notFound);
 app.use(errorHandler);

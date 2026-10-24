@@ -9,7 +9,7 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-Use `http://localhost:5173` (not `127.0.0.1`) so the session cookie works. Set `VITE_API_URL` (see [`.env.example`](.env.example)) if the API is not at `http://localhost:3000`.
+Use `http://localhost:5173` (not `127.0.0.1`) so the session cookie works. Set `VITE_API_URL` (see [`.env.example`](.env.example)) if the API is not at `http://localhost:3000/api`; production builds default to `/api` on the same origin.
 
 | Command | Purpose |
 | --- | --- |

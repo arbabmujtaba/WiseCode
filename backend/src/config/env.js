@@ -13,7 +13,11 @@ const env = {
   nodeEnv: process.env.NODE_ENV || 'development',
   isProduction: process.env.NODE_ENV === 'production',
   port: Number(process.env.PORT) || 3000,
-  frontendOrigins: list(process.env.FRONTEND_URLS, 'http://localhost:5173,http://127.0.0.1:5173'),
+  // Render sets RENDER_EXTERNAL_URL; allow it so the single-service deploy works without extra config.
+  frontendOrigins: [
+    ...list(process.env.FRONTEND_URLS, 'http://localhost:5173,http://127.0.0.1:5173'),
+    ...(process.env.RENDER_EXTERNAL_URL ? [process.env.RENDER_EXTERNAL_URL.replace(/\/$/, '')] : []),
+  ],
 
   mongoUri: process.env.DB_CONNECT_STRING,
   jwtKey: process.env.JWT_KEY,

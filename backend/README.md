@@ -63,6 +63,8 @@ shims/                   Node 25+ fix for buffer-equal-constant-time (wired via 
 
 Errors are JSON: `{ "message": "..." }`. **User** routes need a valid session cookie; **Admin** routes also need the `admin` role (checked in the database).
 
+All endpoints below are mounted under `/api` (e.g. `/api/user/login`), except `/health`. When `frontend/dist` exists, the server also serves the React app for every other `GET` path.
+
 | Method | Endpoint | Access | Purpose |
 | --- | --- | --- | --- |
 | POST | `/user/register` | Public | Register (always `user` role) |
@@ -90,4 +92,4 @@ Errors are JSON: `{ "message": "..." }`. **User** routes need a valid session co
 
 ### Voice tutor
 
-The browser streams 16 kHz PCM microphone audio over `/ai/live`; the server forwards it to Gemini Live and streams 24 kHz PCM speech back, with live transcripts. The API key never reaches the browser. Connections need the session cookie and an allowed `Origin`; each user may have 2 sessions of up to `VOICE_MAX_MINUTES`. The model reads the student's current code and Run/Submit results through a `get_editor_state` tool.
+The browser streams 16 kHz PCM microphone audio over `/api/ai/live`; the server forwards it to Gemini Live and streams 24 kHz PCM speech back, with live transcripts. The API key never reaches the browser. Connections need the session cookie and an allowed `Origin`; each user may have 2 sessions of up to `VOICE_MAX_MINUTES`. The model reads the student's current code and Run/Submit results through a `get_editor_state` tool.

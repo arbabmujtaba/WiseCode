@@ -3,6 +3,8 @@
 //   PcmPlayer    – gapless playback of 24 kHz PCM16 chunks with instant stop (barge-in)
 // Both expose an AnalyserNode so the UI can draw a live waveform.
 
+import { API_BASE_URL } from '../api/baseUrl';
+
 export const VOICE_SUPPORTED =
   typeof window !== 'undefined' &&
   !!navigator.mediaDevices?.getUserMedia &&
@@ -144,7 +146,7 @@ export class PcmPlayer {
 
 // Builds the ws(s):// URL for the voice endpoint from the REST API base URL.
 export const liveUrl = (problemId) => {
-  const base = new URL(import.meta.env.VITE_API_URL || 'http://localhost:3000', window.location.href);
+  const base = new URL(API_BASE_URL, window.location.href);
   base.protocol = base.protocol === 'https:' ? 'wss:' : 'ws:';
   base.pathname = `${base.pathname.replace(/\/$/, '')}/ai/live`;
   base.search = `?problemId=${encodeURIComponent(problemId)}`;

@@ -1,0 +1,41 @@
+# Render Blueprint: one free web service that serves the API (/api), the voice
+# WebSocket (/api/ai/live) and the built React app from the same origin.
+services:
+  - type: web
+    name: wisecode
+    runtime: node
+    plan: free
+    # --include=dev: Vite is a devDependency and NODE_ENV=production would skip it.
+    buildCommand: npm ci --prefix frontend --include=dev && npm run build --prefix frontend && npm ci --prefix backend --omit=dev
+    startCommand: npm start --prefix backend
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: JWT_KEY
+        generateValue: true
+      # Values below are entered in the Render dashboard when the Blueprint is created.
+      - key: DB_CONNECT_STRING
+        sync: false
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        sync: false
+      - key: REDIS_PASS
+        sync: false
+      - key: JUDGE0_KEY
+        sync: false
+      - key: GEMINI_KEY
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      # Only for a separate Vercel frontend: set FRONTEND_URLS=https://<app>.vercel.app
+      # and COOKIE_SAMESITE=none. Not needed for the single-service setup.
+      - key: FRONTEND_URLS
+        sync: false

@@ -12,7 +12,7 @@ const start = async () => {
     console.log('DB connected');
 
     const server = app.listen(env.port, () => console.log(`Server listening on port ${env.port}`));
-    attachVoiceServer(server); // ws://<host>/ai/live
+    attachVoiceServer(server); // ws://<host>/api/ai/live
 
     const shutdown = (signal) => {
       console.log(`${signal} received, shutting down`);
