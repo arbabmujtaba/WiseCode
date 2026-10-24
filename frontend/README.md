@@ -55,6 +55,7 @@ npm run preview
 - Left panel tabs: description, video editorial, reference solutions (hidden until solved), submission history (load old code into the editor), AI tutor with Markdown and code blocks
 - Dashboard: solved/submission/acceptance/streak stats, activity heatmap, difficulty and topic progress, recent submissions, account deletion
 - Admin: stats hub, searchable problem manager, create/edit form (verified on Judge0), delete, Cloudinary video upload/replace/remove
+- Voice tutor: hands-free real-time conversation (Voice tab or the top-bar button), live transcripts, animated waveform, barge-in interruption, mic/speaker mute, Learning vs Direct mode, voice choice, text fallback; shares history with the text AI tutor
 - Dark/light theme, toasts, responsive layout, keyboard-accessible dialogs and menus
 
 ## Routes

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Editor from '@monaco-editor/react';
 import { NavLink, useNavigate, useParams } from 'react-router';
 import {
+  AudioLines,
   Bot,
   BookOpen,
   CheckCircle2,
@@ -35,6 +36,9 @@ import Editorial from '../components/Editorial';
 import Markdown from '../components/Markdown';
 import { ResultPanel, TestcasePanel } from '../components/ConsolePanels';
 import ConfirmDialog from '../components/ConfirmDialog';
+import VoicePanel from '../components/voice/VoicePanel';
+import VoiceDock from '../components/voice/VoiceDock';
+import { useVoiceSession } from '../hooks/useVoiceSession';
 
 const LEFT_TABS = [
   { id: 'description', label: 'Description', icon: FileText },
@@ -42,11 +46,37 @@ const LEFT_TABS = [
   { id: 'solutions', label: 'Solutions', icon: BookOpen },
   { id: 'submissions', label: 'Submissions', icon: History },
   { id: 'ai', label: 'AI Tutor', icon: Bot },
+  { id: 'voice', label: 'Voice', icon: AudioLines },
 ];
 
 const draftKey = (pid, lang) => `wisecode:draft:${pid}:${lang}`;
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 const MOD = isMac ? '⌘' : 'Ctrl';
+
+// Compact run/submit summary for the voice tutor's get_editor_state tool.
+const summariseResult = (r, kind) => {
+  if (!r) return null;
+  if (r.error) return { verdict: 'request failed', error: r.error };
+  const verdict =
+    kind === 'submit'
+      ? r.accepted ? 'Accepted' : r.status === 'wrong' ? 'Wrong Answer' : 'Error'
+      : r.success ? 'All examples passed' : r.status === 'wrong' ? 'Wrong Answer' : 'Error';
+  const compile = r.testCases?.find((c) => c.compile_output)?.compile_output;
+  return {
+    verdict,
+    passed: r.passedTestCases,
+    total: r.totalTestCases,
+    error: compile || r.errorMessage || '',
+    runtime: r.runtime != null ? `${r.runtime}s` : '',
+    memory: r.memory != null ? `${r.memory}KB` : '',
+    cases: (r.testCases || []).map((c) => ({
+      input: c.stdin,
+      expected: c.expected_output,
+      output: c.stdout ?? c.stderr ?? '',
+      passed: c.status_id === 3,
+    })),
+  };
+};
 
 const starterFor = (problem, lang) =>
   problem?.startCode?.find((s) => s.language === languageById(lang).label)?.initialCode || '';
@@ -171,6 +201,23 @@ const ProblemPage = () => {
   const [submitResult, setSubmitResult] = useState(null);
   const [historyKey, setHistoryKey] = useState(0);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [pendingPrompt, setPendingPrompt] = useState('');
+  const editorRef = useRef(null);
+
+  // Latest editor/run state, read by the voice tutor on demand.
+  const liveState = useRef({});
+  liveState.current = { code, language, runResult, submitResult };
+  const getVoiceContext = useCallback(() => {
+    const { code: c, language: l, runResult: rr, submitResult: sr } = liveState.current;
+    return {
+      language: languageById(l).label,
+      code: c,
+      cursorLine: editorRef.current?.getPosition?.()?.lineNumber,
+      lastRun: summariseResult(rr, 'run'),
+      lastSubmit: summariseResult(sr, 'submit'),
+    };
+  }, []);
+  const voice = useVoiceSession({ problemId, getContext: getVoiceContext });
 
   const hSplit = useSplit({ initial: 45, min: 25, max: 70, axis: 'x', storageKey: 'wisecode:split-x' });
   const vSplit = useSplit({ initial: 62, min: 25, max: 85, axis: 'y', storageKey: 'wisecode:split-y' });
@@ -285,6 +332,7 @@ const ProblemPage = () => {
   }, []);
 
   const onEditorMount = (editor, monaco) => {
+    editorRef.current = editor;
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => execRef.current('submit'));
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Quote, () => execRef.current('run'));
   };
@@ -330,7 +378,7 @@ const ProblemPage = () => {
           </button>
         ))}
       </div>
-      <div className={`scroll-thin min-h-0 flex-1 p-5 ${leftTab === 'ai' ? 'flex flex-col' : 'overflow-y-auto'}`}>
+      <div className={`scroll-thin min-h-0 flex-1 p-5 ${leftTab === 'ai' || leftTab === 'voice' ? 'flex flex-col' : 'overflow-y-auto'}`}>
         {leftTab === 'description' && <Description problem={problem} solved={isSolved} />}
         {leftTab === 'editorial' && (
           <Editorial secureUrl={problem.secureUrl} thumbnailUrl={problem.thumbnailUrl} duration={problem.duration} />
@@ -339,7 +387,26 @@ const ProblemPage = () => {
         {leftTab === 'submissions' && (
           <SubmissionHistory problemId={problem._id} refreshKey={historyKey} onLoadCode={loadCode} />
         )}
-        {leftTab === 'ai' && <ChatAi key={problem._id} problem={problem} getCode={() => code} language={language} />}
+        {leftTab === 'ai' && (
+          <ChatAi
+            key={problem._id}
+            problem={problem}
+            getCode={() => code}
+            language={language}
+            initialPrompt={pendingPrompt}
+            onPromptSent={() => setPendingPrompt('')}
+          />
+        )}
+        {leftTab === 'voice' && (
+          <VoicePanel
+            voice={voice}
+            onUseTextChat={(text) => {
+              if (voice.active) voice.stop();
+              if (text) setPendingPrompt(text);
+              setLeftTab('ai');
+            }}
+          />
+        )}
       </div>
     </section>
   );
@@ -495,6 +562,7 @@ const ProblemPage = () => {
           </div>
         </div>
         <div className="flex items-center gap-1">
+          <VoiceDock voice={voice} onOpen={() => setLeftTab('voice')} />
           <ThemeToggle />
           <UserMenu />
         </div>

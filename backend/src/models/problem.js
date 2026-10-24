@@ -46,9 +46,10 @@ const problemSchema = new Schema({
 
     hiddenTestCases:[
         {
+            // Empty stdin is a valid edge case (e.g. an empty string), so not "required".
             input:{
                 type:String,
-                required:true,
+                default:'',
             },
             output:{
                 type:String,

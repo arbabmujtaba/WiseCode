@@ -11,18 +11,14 @@ const problemRouter = require('./routes/problemCreator');
 const submitRouter = require('./routes/submit');
 const aiRouter = require('./routes/aiChatting');
 const videoRouter = require('./routes/videoCreator');
+const { isAllowedOrigin } = require('./config/origins');
+const { attachLiveServer } = require('./live/liveProxy');
 
 const app = express();
 
-// Comma-separated list of allowed frontend origins.
-const allowedOrigins = (process.env.FRONTEND_URLS || 'http://localhost:5173,http://127.0.0.1:5173')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean);
-
 app.use(
   cors({
-    origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin)),
+    origin: (origin, cb) => cb(null, isAllowedOrigin(origin)),
     credentials: true,
   })
 );
@@ -60,7 +56,8 @@ const start = async () => {
     await Promise.all([main(), redisClient.connect()]);
     console.log('DB connected');
     const port = process.env.PORT || 3000;
-    app.listen(port, () => console.log(`Server listening on port ${port}`));
+    const server = app.listen(port, () => console.log(`Server listening on port ${port}`));
+    attachLiveServer(server); // ws://<host>/ai/live voice tutor
   } catch (err) {
     console.error('Startup failed:', err.message);
     process.exit(1);

@@ -1,14 +1,40 @@
 const mongoose = require('mongoose');
-const { GoogleGenAI } = require('@google/genai');
+const axios = require('axios');
 const Problem = require('../models/problem');
 
 const MAX_MESSAGES = 30;
 const MAX_MESSAGE_CHARS = 8000;
 
-let client;
-const getClient = () => {
-  if (!client) client = new GoogleGenAI({ apiKey: process.env.GEMINI_KEY });
-  return client;
+const TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS) || 45000;
+
+// GEMINI_MODEL is tried first, then GEMINI_FALLBACK_MODEL (comma-separated list allowed).
+const MODELS = () => [
+  process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+  ...(process.env.GEMINI_FALLBACK_MODEL || 'gemini-flash-latest').split(','),
+].map((m) => m.trim()).filter((m, i, all) => m && all.indexOf(m) === i);
+
+// Overloaded, rate-limited, timed-out or retired models are worth retrying on another model.
+const isRetryable = (err) =>
+  /TIMEOUT|UNAVAILABLE|high demand|overloaded|503|500|INTERNAL|RESOURCE_EXHAUSTED|429|no longer available|NOT_FOUND|404/i.test(
+    String(err?.message || '')
+  );
+
+// Calls the Gemini REST API directly so overload errors (503) surface immediately
+// instead of being retried silently by the SDK.
+const generate = async (model, contents, systemInstruction) => {
+  try {
+    const { data } = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+      { contents, systemInstruction: { parts: [{ text: systemInstruction }] } },
+      { headers: { 'x-goog-api-key': process.env.GEMINI_KEY }, timeout: TIMEOUT_MS }
+    );
+    const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') || '';
+    return text;
+  } catch (err) {
+    if (err.code === 'ECONNABORTED') throw new Error('TIMEOUT: Gemini did not respond in time');
+    const e = err.response?.data?.error;
+    throw new Error(e ? `${e.status || ''} ${e.code || ''} ${e.message || ''}` : err.message);
+  }
 };
 
 // Keep only well-formed { role, parts: [{ text }] } entries, trimmed to a sane size.
@@ -71,24 +97,36 @@ const solveDoubt = async (req, res) => {
       return res.status(400).json({ message: 'Send a question to the tutor' });
     }
 
-    const response = await getClient().models.generateContent({
-      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
-      contents: messages,
-      config: {
-        systemInstruction: buildSystemInstruction({
-          ...context,
-          userCode: typeof code === 'string' ? code.slice(0, 20000) : '',
-          language,
-        }),
-      },
+    const systemInstruction = buildSystemInstruction({
+      ...context,
+      userCode: typeof code === 'string' ? code.slice(0, 20000) : '',
+      language,
     });
 
-    res.status(200).json({ message: response.text || 'No response from the tutor. Try rephrasing.' });
+    // Primary model first; on overload/timeout fall back to the next one.
+    let text = null;
+    let lastErr;
+    for (const model of MODELS()) {
+      try {
+        text = await generate(model, messages, systemInstruction);
+        break;
+      } catch (err) {
+        lastErr = err;
+        if (!isRetryable(err)) throw err;
+        console.warn(`Gemini model ${model} unavailable, trying fallback:`, String(err.message).slice(0, 120));
+      }
+    }
+    if (text === null) throw lastErr;
+
+    res.status(200).json({ message: text || 'No response from the tutor. Try rephrasing.' });
   } catch (err) {
     const raw = String(err?.message || '');
     console.error('AI chat error:', raw.slice(0, 300));
     if (/API key not valid|API_KEY_INVALID|PERMISSION_DENIED/i.test(raw)) {
       return res.status(503).json({ message: 'AI tutor is unavailable: the server Gemini API key is invalid.' });
+    }
+    if (/TIMEOUT|UNAVAILABLE|high demand|overloaded|503/i.test(raw)) {
+      return res.status(503).json({ message: 'AI tutor is overloaded right now. Please try again in a minute.' });
     }
     if (/RESOURCE_EXHAUSTED|quota|429/i.test(raw)) {
       return res.status(429).json({ message: 'AI tutor is busy (rate limit). Try again in a moment.' });

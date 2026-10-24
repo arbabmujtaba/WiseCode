@@ -78,8 +78,15 @@ Override them with `TEST_USER_EMAIL`, `TEST_USER_PASSWORD`, `TEST_ADMIN_EMAIL`, 
 
 - `FRONTEND_URLS` - comma-separated CORS allow-list (default `http://localhost:5173,http://127.0.0.1:5173`)
 - `REDIS_HOST`, `REDIS_PORT`, `REDIS_USERNAME` - override the default Redis Cloud host
-- `GEMINI_MODEL` - Gemini model for the tutor (default `gemini-2.5-flash`)
+- `GEMINI_MODEL` - Gemini model for the tutor (default `gemini-3.5-flash`)
+- `GEMINI_LIVE_MODEL` - voice tutor model (default `gemini-3.1-flash-live-preview`)
+- `GEMINI_LIVE_FALLBACK_MODEL` - used if the primary voice model fails to connect (default `gemini-2.5-flash-native-audio-latest`)
+- `VOICE_MAX_MINUTES` - max length of one voice session (default 15)
 - `NODE_ENV=production` - marks the session cookie `Secure`
+
+### Voice Tutor (WebSocket)
+
+`ws://<host>/ai/live?problemId=<id>` proxies the browser to the Gemini Live API (the API key stays on the server). It requires the session cookie and an allowed `Origin`, limits each user to 2 concurrent sessions, and lets the model call `get_editor_state` to read the student's live code and Run/Submit results. Protocol details are documented at the top of `src/live/liveProxy.js`.
 
 ### Node 25+ Compatibility
 

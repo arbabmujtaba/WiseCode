@@ -2,20 +2,26 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const redisClient = require('../config/redis');
 
+// Resolves a session token to a user document, or throws.
+// Shared by the HTTP middleware and the voice WebSocket handshake.
+const authenticateToken = async (token) => {
+  if (!token) throw new Error('Not signed in');
+
+  const payload = jwt.verify(token, process.env.JWT_KEY);
+  if (!payload?._id) throw new Error('Invalid token');
+
+  if (await redisClient.exists(`token:${token}`)) throw new Error('Session has ended');
+
+  const user = await User.findById(payload._id);
+  if (!user) throw new Error("User doesn't exist");
+  return user;
+};
+
 // Verifies the session cookie and attaches the user document to req.result.
 // When requireAdmin is set, the role is checked against the database (not just the token).
 const createAuthMiddleware = ({ requireAdmin = false } = {}) => async (req, res, next) => {
   try {
-    const { token } = req.cookies;
-    if (!token) throw new Error('Not signed in');
-
-    const payload = jwt.verify(token, process.env.JWT_KEY);
-    if (!payload?._id) throw new Error('Invalid token');
-
-    if (await redisClient.exists(`token:${token}`)) throw new Error('Session has ended');
-
-    const user = await User.findById(payload._id);
-    if (!user) throw new Error("User doesn't exist");
+    const user = await authenticateToken(req.cookies.token);
 
     if (requireAdmin && user.role !== 'admin') {
       return res.status(403).json({ message: 'Admin access required' });
@@ -29,3 +35,4 @@ const createAuthMiddleware = ({ requireAdmin = false } = {}) => async (req, res,
 };
 
 module.exports = createAuthMiddleware;
+module.exports.authenticateToken = authenticateToken;

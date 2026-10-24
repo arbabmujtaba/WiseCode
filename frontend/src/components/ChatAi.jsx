@@ -13,7 +13,7 @@ const SUGGESTIONS = [
 const storageKey = (id) => `wisecode:chat:${id}`;
 
 // Problem-aware AI tutor. Sends the conversation, problem id and current editor code.
-function ChatAi({ problem, getCode, language }) {
+function ChatAi({ problem, getCode, language, initialPrompt, onPromptSent }) {
   const [messages, setMessages] = useState(() => {
     try {
       return JSON.parse(sessionStorage.getItem(storageKey(problem._id))) || [];
@@ -55,6 +55,17 @@ function ChatAi({ problem, getCode, language }) {
       inputRef.current?.focus();
     }
   };
+
+  // A question typed in the voice panel while voice was off is sent here once.
+  const sentPrompt = useRef(false);
+  useEffect(() => {
+    if (initialPrompt && !sentPrompt.current) {
+      sentPrompt.current = true;
+      send(initialPrompt);
+      onPromptSent?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPrompt]);
 
   const onKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -104,6 +115,7 @@ function ChatAi({ problem, getCode, language }) {
               >
                 <span className="sr-only">{mine ? 'You:' : 'Tutor:'}</span>
                 {mine ? <p className="text-sm whitespace-pre-wrap">{m.parts[0].text}</p> : <Markdown text={m.parts[0].text} />}
+                {m.via === 'voice' && <span className="mt-0.5 block text-[0.65rem] opacity-60">via voice</span>}
               </div>
             </div>
           );

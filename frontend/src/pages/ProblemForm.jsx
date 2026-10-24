@@ -22,7 +22,7 @@ const problemSchema = z.object({
     .array(z.object({ input: required('Input'), output: required('Output'), explanation: required('Explanation') }))
     .min(1, 'Add at least one visible test case'),
   hiddenTestCases: z
-    .array(z.object({ input: required('Input'), output: required('Output') }))
+    .array(z.object({ input: z.string(), output: required('Output') }))
     .min(1, 'Add at least one hidden test case'),
   startCode: z.array(z.object({ language: z.enum(CODE_LANGS), initialCode: required('Starter code') })).length(3),
   referenceSolution: z.array(z.object({ language: z.enum(CODE_LANGS), completeCode: required('Solution') })).length(3),
