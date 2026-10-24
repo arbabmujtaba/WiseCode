@@ -1,0 +1,7 @@
+{
+  "name": "buffer-equal-constant-time",
+  "version": "1.0.1-node26",
+  "description": "Node 25+ compatible shim for buffer-equal-constant-time",
+  "main": "index.js",
+  "license": "BSD-3-Clause"
+}

@@ -19,7 +19,7 @@ The API server lives in `../backend`. It must be running before the frontend can
 - Node.js and npm
 - A running backend service at `http://localhost:3000`
 
-The API URL is currently defined directly in `src/utils/axiosClient.js`. The backend CORS configuration expects this Vite app to run at `http://localhost:5173`.
+The API URL defaults to `http://localhost:3000` and can be overridden with `VITE_API_URL`. The backend CORS configuration expects this Vite app to run at `http://localhost:5173`.
 
 ## Run Locally
 
@@ -31,32 +31,14 @@ npm run dev
 
 Open the URL printed by Vite, normally `http://localhost:5173`.
 
-### Run The Interactive Demo
-
-Demo mode uses the **real React app** (login, signup, workspace, admin) against an in-memory demo API. Start the demo backend first so it can listen on `http://localhost:3000`.
-
-```bash
-# terminal 1
-cd ../backend
-npm run demo
-
-# terminal 2
-cd frontend
-npm run demo
-```
-
-If the API is hosted somewhere other than `http://localhost:3000`, set
-`VITE_API_URL` before starting Vite. The demo server accepts comma-separated
-frontend origins through `FRONTEND_URLS`.
-
-Open `http://localhost:5173`. Seeded accounts:
+Sign in with the seeded test accounts (create them with `npm run seed:users` in `../backend`):
 
 | Role | Email | Password |
 | --- | --- | --- |
-| User | `demo@example.com` | `DemoUser1!` |
-| Admin | `admin@example.com` | `DemoAdmin1!` |
+| User | `test@wisecode.dev` | `Test@12345` |
+| Admin | `admin@wisecode.dev` | `Admin@12345` |
 
-The demo API does not use MongoDB, Redis, Judge0, Gemini, or Cloudinary. Registration, cookie sessions, problems, run/submit, AI chat, and editorial video routes all work against in-memory data for the process lifetime.
+Set `VITE_API_URL` if the API is not at `http://localhost:3000`.
 
 Other commands:
 
@@ -66,27 +48,27 @@ npm run lint
 npm run preview
 ```
 
-## User Flow
+## Features
 
-1. A visitor registers or signs in. Successful authentication stores a JWT in an HTTP cookie and the Redux auth slice restores that session on page load.
-2. The home page requests the available problems and the signed-in user's solved problems. Problems can be filtered by difficulty, tag, and solved status.
-3. Selecting a problem opens a split-screen workspace with the description, examples, reference solutions, editorial video, submission history, and AI chat on the left, plus a Monaco editor on the right.
-4. Users select JavaScript, Java, or C++. **Run** evaluates code against visible examples; **Submit** evaluates it against hidden test cases and records the result.
-5. An administrator can access `/admin` and the protected administration pages to create or remove problems and upload or delete editorial videos.
+- Problem set: search, difficulty/topic/status filters (kept in the URL), sorting, pagination, solved progress, random unsolved pick
+- Workspace: resizable panes, Monaco editor (JS/Java/C++), auto-saved drafts per problem and language, font size, reset, Run (`Ctrl+'`) and Submit (`Ctrl+Enter`), per-test-case results, prev/next/random navigation
+- Left panel tabs: description, video editorial, reference solutions (hidden until solved), submission history (load old code into the editor), AI tutor with Markdown and code blocks
+- Dashboard: solved/submission/acceptance/streak stats, activity heatmap, difficulty and topic progress, recent submissions, account deletion
+- Admin: stats hub, searchable problem manager, create/edit form (verified on Judge0), delete, Cloudinary video upload/replace/remove
+- Dark/light theme, toasts, responsive layout, keyboard-accessible dialogs and menus
 
 ## Routes
 
 | Route | Access | Purpose |
 | --- | --- | --- |
-| `/` | Signed-in user | Problem list and filters |
-| `/login` | Signed-out user | Sign in |
-| `/signup` | Signed-out user | Create an account |
-| `/problem/:problemId` | Application route | Solve a selected problem |
-| `/admin` | Administrator | Administration hub |
-| `/admin/create` | Administrator | Create a problem |
-| `/admin/delete` | Administrator | Delete a problem |
-| `/admin/video` | Administrator | Manage editorial videos |
-| `/admin/upload/:problemId` | Administrator | Upload an editorial for a problem |
+| `/login`, `/signup` | Signed-out user | Authentication |
+| `/` | User | Problem list |
+| `/dashboard` | User | Stats and history |
+| `/problem/:problemId` | User | Coding workspace |
+| `/admin` | Admin | Admin console |
+| `/admin/problems` | Admin | Manage problems (`?view=video` for editorials) |
+| `/admin/create`, `/admin/edit/:problemId` | Admin | Problem form |
+| `/admin/upload/:problemId` | Admin | Upload a video editorial |
 
 ## API Integration
 

@@ -1,6 +1,13 @@
 const mongoose = require('mongoose');
 const {Schema} = mongoose;
 
+// Keep in sync with frontend/src/lib/constants.js
+const PROBLEM_TAGS = [
+    'array', 'string', 'linkedList', 'stack', 'tree', 'graph', 'dp', 'greedy',
+    'heap', 'math', 'sorting', 'binarySearch', 'twoPointers', 'slidingWindow',
+    'backtracking', 'bitManipulation'
+];
+
 const problemSchema = new Schema({
     title:{
         type:String,
@@ -17,7 +24,7 @@ const problemSchema = new Schema({
     },
     tags:{
         type:String,
-        enum:['array','linkedList','graph','dp'],
+        enum:PROBLEM_TAGS,
         required:true
     },
     visibleTestCases:[
@@ -87,5 +94,6 @@ const problemSchema = new Schema({
 const Problem = mongoose.model('problem',problemSchema);
 
 module.exports = Problem;
+module.exports.PROBLEM_TAGS = PROBLEM_TAGS;
 
 

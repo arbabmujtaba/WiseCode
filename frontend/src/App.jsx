@@ -1,69 +1,65 @@
-import { Routes, Route, Navigate } from "react-router";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Homepage from "./pages/Homepage";
+import { useEffect } from 'react';
+import { Navigate, Route, Routes } from 'react-router';
 import { useDispatch, useSelector } from 'react-redux';
-import { checkAuth } from "./authSlice";
-import { useEffect } from "react";
-import AdminPanel from "./components/AdminPanel";
-import ProblemPage from "./pages/ProblemPage"
-import Admin from "./pages/Admin";
-import AdminVideo from "./components/AdminVideo"
-import AdminDelete from "./components/AdminDelete"
-import AdminUpload from "./components/AdminUpload"
-import AdminUpdate from "./components/AdminUpdate"
+import { checkAuth } from './authSlice';
+import { AppLayout, GuestOnly, RequireAdmin, RequireAuth } from './components/Layout';
+import { PageSpinner } from './components/ui';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Homepage from './pages/Homepage';
+import Dashboard from './pages/Dashboard';
+import ProblemPage from './pages/ProblemPage';
+import Admin from './pages/Admin';
+import AdminProblems from './pages/AdminProblems';
+import ProblemForm from './pages/ProblemForm';
+import AdminUpload from './pages/AdminUpload';
+import NotFound from './pages/NotFound';
 
-const isDemo = import.meta.env.MODE === "demo";
-
-function DemoBanner() {
-  if (!isDemo) return null;
-  return (
-    <div className="bg-warning text-warning-content px-4 py-2 text-center text-sm">
-      Demo mode uses the real UI against an in-memory API. Sign in with
-      <span className="font-mono"> demo@example.com / DemoUser1!</span> or
-      <span className="font-mono"> admin@example.com / DemoAdmin1!</span>
-    </div>
-  );
-}
-
-function Application() {
-
+function App() {
   const dispatch = useDispatch();
-  const { isAuthenticated, user, loading } = useSelector((state) => state.auth);
+  const { initialized } = useSelector((state) => state.auth);
 
-  // check initial authentication
+  // Restore the session from the cookie once on load.
   useEffect(() => {
     dispatch(checkAuth());
   }, [dispatch]);
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">
-      <span className="loading loading-spinner loading-lg"></span>
-    </div>;
+  if (!initialized) {
+    return (
+      <div className="grid min-h-screen place-items-center">
+        <PageSpinner label="Starting WiseCode…" />
+      </div>
+    );
   }
 
   return (
-    <>
-      <DemoBanner />
-      <Routes>
-        <Route path="/" element={isAuthenticated ? <Homepage></Homepage> : <Navigate to="/signup" />}></Route>
-        <Route path="/login" element={isAuthenticated ? <Navigate to="/" /> : <Login></Login>}></Route>
-        <Route path="/signup" element={isAuthenticated ? <Navigate to="/" /> : <Signup></Signup>}></Route>
-        <Route path="/admin" element={isAuthenticated && user?.role === 'admin' ? <Admin /> : <Navigate to="/" />} />
-        <Route path="/admin/create" element={isAuthenticated && user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" />} />
-        <Route path="/admin/delete" element={isAuthenticated && user?.role === 'admin' ? <AdminDelete /> : <Navigate to="/" />} />
-        <Route path="/admin/update" element={isAuthenticated && user?.role === 'admin' ? <AdminUpdate /> : <Navigate to="/" />} />
-        <Route path="/admin/video" element={isAuthenticated && user?.role === 'admin' ? <AdminVideo /> : <Navigate to="/" />} />
-        <Route path="/admin/upload/:problemId" element={isAuthenticated && user?.role === 'admin' ? <AdminUpload /> : <Navigate to="/" />} />
-        <Route path="/problem/:problemId" element={<ProblemPage />}></Route>
+    <Routes>
+      <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
+      <Route path="/signup" element={<GuestOnly><Signup /></GuestOnly>} />
 
-      </Routes>
-    </>
-  )
-}
+      {/* Full-screen coding workspace */}
+      <Route path="/problem/:problemId" element={<RequireAuth><ProblemPage /></RequireAuth>} />
 
-function App() {
-  return <Application />;
+      <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
+        <Route index element={<Homepage />} />
+        <Route path="dashboard" element={<Dashboard />} />
+
+        <Route path="admin" element={<RequireAdmin />}>
+          <Route index element={<Admin />} />
+          <Route path="problems" element={<AdminProblems />} />
+          <Route path="create" element={<ProblemForm key="create" />} />
+          <Route path="edit/:problemId" element={<ProblemForm key="edit" />} />
+          <Route path="upload/:problemId" element={<AdminUpload />} />
+          {/* Legacy admin URLs */}
+          <Route path="update" element={<Navigate to="/admin/problems" replace />} />
+          <Route path="delete" element={<Navigate to="/admin/problems" replace />} />
+          <Route path="video" element={<Navigate to="/admin/problems?view=video" replace />} />
+        </Route>
+
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
+  );
 }
 
 export default App;

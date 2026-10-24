@@ -1,101 +1,86 @@
-import { Plus, Edit, Trash2, Home, RefreshCw, Zap,Video } from 'lucide-react';
+import { useMemo } from 'react';
 import { NavLink } from 'react-router';
+import { FilePlus2, Library, ListChecks, Video, Settings2 } from 'lucide-react';
+import { useProblems } from '../hooks/useProblems';
+import { DIFFICULTIES, difficultyMeta } from '../lib/constants';
+import { ErrorState, PageSpinner, StatCard } from '../components/ui';
+
+const ACTIONS = [
+  {
+    to: '/admin/create',
+    title: 'Create problem',
+    text: 'Add a new problem. Reference solutions are verified on Judge0 before saving.',
+    icon: FilePlus2,
+    tone: 'text-success bg-success/10',
+  },
+  {
+    to: '/admin/problems',
+    title: 'Manage problems',
+    text: 'Search, edit, or delete existing problems and their test cases.',
+    icon: Settings2,
+    tone: 'text-primary bg-primary/10',
+  },
+  {
+    to: '/admin/problems?view=video',
+    title: 'Video editorials',
+    text: 'Upload or remove Cloudinary-hosted video walkthroughs.',
+    icon: Video,
+    tone: 'text-secondary bg-secondary/10',
+  },
+];
 
 function Admin() {
-  const adminOptions = [
-    {
-      id: 'create',
-      title: 'Create Problem',
-      description: 'Add a new coding problem to the platform',
-      icon: Plus,
-      color: 'btn-success',
-      bgColor: 'bg-success/10',
-      route: '/admin/create'
-    },
-    {
-      id: 'update',
-      title: 'Update Problem',
-      description: 'Edit existing problems and their details',
-      icon: Edit,
-      color: 'btn-warning',
-      bgColor: 'bg-warning/10',
-      route: '/admin/update'
-    },
-    {
-      id: 'delete',
-      title: 'Delete Problem',
-      description: 'Remove problems from the platform',
-      icon: Trash2,
-      color: 'btn-error',
-      bgColor: 'bg-error/10',
-      route: '/admin/delete'
-    },
-    {
-      id: 'video',
-      title: 'Video Problem',
-      description: 'Upload And Delete Videos',
-      icon: Video,
-      color: 'btn-success',
-      bgColor: 'bg-success/10',
-      route: '/admin/video'
+  const { problems, loading, error, reload } = useProblems();
+
+  const counts = useMemo(() => {
+    const c = { easy: 0, medium: 0, hard: 0, video: 0 };
+    for (const p of problems) {
+      c[p.difficulty] = (c[p.difficulty] || 0) + 1;
+      if (p.hasVideo) c.video++;
     }
-  ];
+    return c;
+  }, [problems]);
+
+  if (loading) return <PageSpinner />;
+  if (error) return <ErrorState message={error} onRetry={reload} />;
 
   return (
-    <div className="min-h-screen bg-base-200">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-base-content mb-4">
-            Admin Panel
-          </h1>
-          <p className="text-base-content/70 text-lg">
-            Manage coding problems on your platform
-          </p>
-        </div>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold">Admin console</h1>
+        <p className="text-base-content/60">Manage the problem set and editorial content.</p>
+      </div>
 
-        {/* Admin Options Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {adminOptions.map((option) => {
-            const IconComponent = option.icon;
-            return (
-              <div
-                key={option.id}
-                className="card bg-base-100 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer"
-              >
-                <div className="card-body items-center text-center p-8">
-                  {/* Icon */}
-                  <div className={`${option.bgColor} p-4 rounded-full mb-4`}>
-                    <IconComponent size={32} className="text-base-content" />
-                  </div>
-                  
-                  {/* Title */}
-                  <h2 className="card-title text-xl mb-2">
-                    {option.title}
-                  </h2>
-                  
-                  {/* Description */}
-                  <p className="text-base-content/70 mb-6">
-                    {option.description}
-                  </p>
-                  
-                  {/* Action Button */}
-                  <div className="card-actions">
-                    <div className="card-actions">
-                    <NavLink 
-                    to={option.route}
-                   className={`btn ${option.color} btn-wide`}
-                   >
-                   {option.title}
-                   </NavLink>
-                   </div>
-                  </div>
-                </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard icon={Library} label="Total problems" value={problems.length} />
+        {DIFFICULTIES.map((d) => (
+          <StatCard
+            key={d}
+            icon={ListChecks}
+            label={difficultyMeta(d).label}
+            value={counts[d]}
+            tone={difficultyMeta(d).text}
+            hint={d === 'hard' ? `${counts.video} with video editorials` : undefined}
+          />
+        ))}
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        {ACTIONS.map(({ to, title, text, icon: Icon, tone }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className="card border border-base-300 bg-base-100 transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-lg"
+          >
+            <div className="card-body">
+              <div className={`mb-2 grid h-12 w-12 place-items-center rounded-xl ${tone}`}>
+                <Icon size={24} aria-hidden="true" />
               </div>
-            );
-          })}
-        </div>
-
+              <h2 className="card-title">{title}</h2>
+              <p className="text-sm text-base-content/60">{text}</p>
+            </div>
+          </NavLink>
+        ))}
       </div>
     </div>
   );

@@ -1,183 +1,112 @@
-import { useState, useEffect } from 'react';
-import axiosClient from '../utils/axiosClient';
+import { useEffect, useState } from 'react';
+import { Code2, FileInput, History } from 'lucide-react';
+import axiosClient, { getErrorMessage } from '../utils/axiosClient';
+import { submissionLanguageLabel } from '../lib/constants';
+import { formatDate, formatMemory, formatRuntime, timeAgo } from '../lib/format';
+import { EmptyState, ErrorState, PageSpinner, StatusBadge } from './ui';
 
-const SubmissionHistory = ({ problemId }) => {
-  const [submissions, setSubmissions] = useState([]);
-  const [loading, setLoading] = useState(true);
+// `refreshKey` changes after each submit so the list reloads.
+const SubmissionHistory = ({ problemId, refreshKey, onLoadCode }) => {
+  const [submissions, setSubmissions] = useState(null);
   const [error, setError] = useState(null);
-  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    const fetchSubmissions = async () => {
-      try {
-        setLoading(true);
-        const response = await axiosClient.get(`/problem/submittedProblem/${problemId}`);
-        setSubmissions(response.data);
-        setError(null);
-      } catch (err) {
-        setError('Failed to fetch submission history');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+    let cancelled = false;
+    setError(null);
+    axiosClient
+      .get(`/problem/submittedProblem/${problemId}`)
+      .then(({ data }) => !cancelled && setSubmissions(Array.isArray(data) ? data : []))
+      .catch((e) => !cancelled && setError(getErrorMessage(e, 'Failed to fetch submission history')));
+    return () => {
+      cancelled = true;
     };
+  }, [problemId, refreshKey]);
 
-    fetchSubmissions();
-  }, [problemId]);
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'accepted': return 'badge-success';
-      case 'wrong': return 'badge-error';
-      case 'error': return 'badge-warning';
-      case 'pending': return 'badge-info';
-      default: return 'badge-neutral';
-    }
-  };
-
-  const formatMemory = (memory) => {
-    if (memory < 1024) return `${memory} kB`;
-    return `${(memory / 1024).toFixed(2)} MB`;
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString();
-  };
-
-  if (loading) {
+  if (error) return <ErrorState message={error} />;
+  if (!submissions) return <PageSpinner label="Loading submissions…" />;
+  if (!submissions.length)
     return (
-      <div className="flex justify-center items-center h-64">
-        <span className="loading loading-spinner loading-lg"></span>
-      </div>
+      <EmptyState icon={History} title="No submissions yet">
+        Hit <kbd className="kbd kbd-xs">Submit</kbd> to evaluate your code against hidden tests.
+      </EmptyState>
     );
-  }
-
-  if (error) {
-    return (
-      <div className="alert alert-error shadow-lg my-4">
-        <div>
-          <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>{error}</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="container mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-6 text-center">Submission History</h2>
-      
-      {submissions.length === 0 ? (
-        <div className="alert alert-info shadow-lg">
-          <div>
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span>No submissions found for this problem</span>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div className="overflow-x-auto">
-            <table className="table table-zebra w-full">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Language</th>
-                  <th>Status</th>
-                  <th>Runtime</th>
-                  <th>Memory</th>
-                  <th>Test Cases</th>
-                  <th>Submitted</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {submissions.map((sub, index) => (
-                  <tr key={sub._id}>
-                    <td>{index + 1}</td>
-                    <td className="font-mono">{sub.language}</td>
-                    <td>
-                      <span className={`badge ${getStatusColor(sub.status)}`}>
-                        {sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
-                      </span>
-                    </td>
-                    
-                    <td className="font-mono">{sub.runtime}sec</td>
-                    <td className="font-mono">{formatMemory(sub.memory)}</td>
-                    <td className="font-mono">{sub.testCasesPassed}/{sub.testCasesTotal}</td>
-                    <td>{formatDate(sub.createdAt)}</td>
-                    <td>
-                      <button 
-                        className="btn btn-s btn-outline"
-                        onClick={() => setSelectedSubmission(sub)}
-                      >
-                        Code
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <p className="mt-4 text-sm text-gray-500">
-            Showing {submissions.length} submissions
-          </p>
-        </>
-      )}
-
-      {/* Code View Modal */}
-      {selectedSubmission && (
-        <div className="modal modal-open">
-          <div className="modal-box w-11/12 max-w-5xl">
-            <h3 className="font-bold text-lg mb-4">
-              Submission Details: {selectedSubmission.language}
-            </h3>
-            
-            <div className="mb-4">
-              <div className="flex flex-wrap gap-2 mb-2">
-                <span className={`badge ${getStatusColor(selectedSubmission.status)}`}>
-                  {selectedSubmission.status}
-                </span>
-                <span className="badge badge-outline">
-                  Runtime: {selectedSubmission.runtime}s
-                </span>
-                <span className="badge badge-outline">
-                  Memory: {formatMemory(selectedSubmission.memory)}
-                </span>
-                <span className="badge badge-outline">
-                  Passed: {selectedSubmission.testCasesPassed}/{selectedSubmission.testCasesTotal}
-                </span>
-              </div>
-              
-              {selectedSubmission.errorMessage && (
-                <div className="alert alert-error mt-2">
-                  <div>
-                    <span>{selectedSubmission.errorMessage}</span>
-                  </div>
+    <>
+      <ul className="divide-y divide-base-300 rounded-box border border-base-300">
+        {submissions.map((s) => (
+          <li key={s._id}>
+            <button
+              className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-base-200/70"
+              onClick={() => setSelected(s)}
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={s.status} />
+                  <span className="text-xs text-base-content/60">{submissionLanguageLabel(s.language)}</span>
                 </div>
-              )}
+                <div className="mt-0.5 text-xs text-base-content/50" title={formatDate(s.createdAt)}>
+                  {timeAgo(s.createdAt)}
+                </div>
+              </div>
+              <div className="text-right text-xs tabular-nums text-base-content/60">
+                <div>
+                  {s.testCasesPassed}/{s.testCasesTotal} tests
+                </div>
+                <div>
+                  {formatRuntime(s.runtime)} · {formatMemory(s.memory)}
+                </div>
+              </div>
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {selected && (
+        <div className="modal modal-open" role="dialog" aria-modal="true" aria-labelledby="sub-title">
+          <div className="modal-box w-11/12 max-w-4xl">
+            <h3 id="sub-title" className="flex items-center gap-2 text-lg font-bold">
+              <Code2 size={18} /> Submission · {submissionLanguageLabel(selected.language)}
+            </h3>
+            <div className="my-3 flex flex-wrap gap-2">
+              <StatusBadge status={selected.status} />
+              <span className="badge badge-outline badge-sm">
+                {selected.testCasesPassed}/{selected.testCasesTotal} tests
+              </span>
+              <span className="badge badge-outline badge-sm">{formatRuntime(selected.runtime)}</span>
+              <span className="badge badge-outline badge-sm">{formatMemory(selected.memory)}</span>
+              <span className="badge badge-ghost badge-sm">{formatDate(selected.createdAt)}</span>
             </div>
-            
-            <pre className="p-4 bg-gray-900 text-gray-100 rounded overflow-x-auto">
-              <code>{selectedSubmission.code}</code>
+            {selected.errorMessage && (
+              <pre className="scroll-thin mb-3 max-h-40 overflow-auto rounded-lg bg-error/10 p-3 font-mono text-xs text-error">
+                {selected.errorMessage}
+              </pre>
+            )}
+            <pre className="scroll-thin max-h-[50vh] overflow-auto rounded-lg bg-base-300 p-4 font-mono text-xs leading-relaxed">
+              <code>{selected.code}</code>
             </pre>
-            
             <div className="modal-action">
-              <button 
-                className="btn"
-                onClick={() => setSelectedSubmission(null)}
-              >
+              {onLoadCode && (
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => {
+                    onLoadCode(selected.language === 'c++' ? 'cpp' : selected.language, selected.code);
+                    setSelected(null);
+                  }}
+                >
+                  <FileInput size={14} /> Load into editor
+                </button>
+              )}
+              <button className="btn btn-sm" onClick={() => setSelected(null)}>
                 Close
               </button>
             </div>
           </div>
+          <button className="modal-backdrop" onClick={() => setSelected(null)} aria-label="Close" />
         </div>
       )}
-    </div>
+    </>
   );
 };
 

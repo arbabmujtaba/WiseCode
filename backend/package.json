@@ -5,13 +5,16 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/index.js",
-    "demo": "node src/demoServer.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node --watch src/index.js",
+    "seed:users": "node scripts/seedUsers.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "overrides": {
+    "buffer-equal-constant-time": "file:./shims/buffer-equal-constant-time"
+  },
   "dependencies": {
     "@google/genai": "^1.3.0",
     "axios": "^1.9.0",

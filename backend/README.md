@@ -57,31 +57,37 @@ node src/index.js
 
 The server connects to MongoDB and Redis before it starts listening on `PORT`. Use `3000` for local development: the frontend is configured to call `http://localhost:3000`, and this server permits the frontend origin `http://localhost:5173`.
 
-There is currently no `dev` script. Production-style startup is `npm start` or `node src/index.js`.
+For auto-restart during development use `npm run dev`.
 
-### Run The Demo API
+### Test Accounts
 
-This starts the same HTTP surface on `PORT` (default `3000`) with in-memory users, problems, submissions, and videos. It does not connect to MongoDB, Redis, Judge0, Gemini, or Cloudinary.
+Create (or reset) the test accounts in the configured MongoDB:
 
 ```bash
-cd backend
-npm run demo
+npm run seed:users
 ```
 
-Seeded accounts:
+| Role | Email | Password |
+| --- | --- | --- |
+| User | `test@wisecode.dev` | `Test@12345` |
+| Admin | `admin@wisecode.dev` | `Admin@12345` |
 
-- User: `demo@example.com` / `DemoUser1!`
-- Admin: `admin@example.com` / `DemoAdmin1!`
+Override them with `TEST_USER_EMAIL`, `TEST_USER_PASSWORD`, `TEST_ADMIN_EMAIL`, `TEST_ADMIN_PASSWORD`.
 
-Then run `npm run demo` in `../frontend`. Data resets when the demo process exits.
+### Optional Environment Variables
 
-The demo API also exposes `/health` and `/demo/health`. By default it accepts
-frontend requests from `http://localhost:5173` and `http://127.0.0.1:5173`;
-override this with a comma-separated `FRONTEND_URLS` environment variable.
+- `FRONTEND_URLS` - comma-separated CORS allow-list (default `http://localhost:5173,http://127.0.0.1:5173`)
+- `REDIS_HOST`, `REDIS_PORT`, `REDIS_USERNAME` - override the default Redis Cloud host
+- `GEMINI_MODEL` - Gemini model for the tutor (default `gemini-2.5-flash`)
+- `NODE_ENV=production` - marks the session cookie `Secure`
+
+### Node 25+ Compatibility
+
+`jsonwebtoken` depends on `buffer-equal-constant-time`, which crashes on Node 25+. `package.json` overrides it with the local drop-in shim in `shims/buffer-equal-constant-time`.
 
 ## Authentication And Roles
 
-Successful registration and login set a `token` cookie containing a one-hour JWT. Protected user routes require a valid, non-blocklisted token. Administrator routes also require `role: "admin"` in that token.
+Successful registration and login set an HTTP-only `token` cookie containing a 24-hour JWT. Protected user routes require a valid, non-blocklisted token. Administrator routes also check that the user's role in the database is `admin`.
 
 New public registrations always receive the `user` role. Creating another administrator with `POST /user/admin/register` requires an authenticated administrator, so an initial administrator must be seeded or created outside this public registration flow.
 
@@ -97,7 +103,7 @@ All routes below are prefixed by their mounted path. Routes marked **User** requ
 | GET | `/user/check` | User | Return current user details |
 | DELETE | `/user/deleteProfile` | User | Delete the current user profile |
 | POST | `/user/admin/register` | Admin | Create another administrator |
-| GET | `/problem/getAllProblem` | User | List problem summaries |
+| GET | `/problem/getAllProblem` | User | List problem summaries (with `hasVideo`) |
 | GET | `/problem/problemById/:id` | User | Get a problem, examples, starter code, solutions, and editorial metadata |
 | GET | `/problem/problemSolvedByUser` | User | List the current user's solved problems |
 | GET | `/problem/submittedProblem/:pid` | User | Get the current user's submissions for a problem |
@@ -106,6 +112,8 @@ All routes below are prefixed by their mounted path. Routes marked **User** requ
 | DELETE | `/problem/delete/:id` | Admin | Delete a problem |
 | POST | `/submission/run/:id` | User | Run source code against visible test cases |
 | POST | `/submission/submit/:id` | User | Evaluate source code against hidden cases and persist the submission |
+| GET | `/submission/history` | User | Recent submissions across all problems |
+| GET | `/health` | Public | MongoDB/Redis status |
 | POST | `/ai/chat` | User | Get DSA help grounded in the current problem |
 | GET | `/video/create/:problemId` | Admin | Get signed Cloudinary upload parameters |
 | POST | `/video/save` | Admin | Verify and save editorial-video metadata |
@@ -128,4 +136,5 @@ src/
 
 - Code execution supports JavaScript, Java, and C++ through Judge0 language IDs.
 - Judge0, Gemini, and Cloudinary requests use third-party credentials. Keep `.env` private and do not commit it.
-- `npm test` is currently a placeholder command; this repository does not include an automated backend test suite.
+- Errors are returned as JSON: `{ "message": "..." }`.
+- The repository does not include an automated backend test suite.
