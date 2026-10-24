@@ -2,7 +2,7 @@
 
 This is the React single-page application for a coding-practice platform. Authenticated users can browse algorithm problems, write and run code, submit against hidden test cases, review past submissions, watch editorial videos, and ask a problem-aware AI tutor for help. Administrators can create, delete, and manage problems and editorial videos.
 
-The API server lives in `../backend`.. It must be running before the frontend can be used.
+The API server lives in `../backend`. It must be running before the frontend can be used.
 
 ## Stack
 
