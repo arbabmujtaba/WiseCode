@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CheckCircle2, Clock, Cpu, PartyPopper, XCircle } from 'lucide-react';
-import { formatMemory, formatRuntime } from '../lib/format';
+import { formatMemory, formatRuntime } from '../../lib/format';
 
 const Block = ({ label, children, tone = '' }) => (
   <div>

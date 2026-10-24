@@ -22,20 +22,20 @@ import {
   TerminalSquare,
   Video,
 } from 'lucide-react';
-import axiosClient, { getErrorMessage } from '../utils/axiosClient';
+import axiosClient, { getErrorMessage } from '../api/client';
 import { LANGUAGES, languageById, tagLabel } from '../lib/constants';
 import { useProblems, markSolved } from '../hooks/useProblems';
 import { useTheme } from '../hooks/useTheme';
 import { useIsDesktop, useSplit } from '../hooks/useSplit';
-import { useToast } from '../components/Toast';
+import { useToast } from '../components/ui/Toast';
 import { DifficultyBadge, ErrorState, Logo, PageSpinner } from '../components/ui';
-import { ThemeToggle, UserMenu } from '../components/Navbar';
-import SubmissionHistory from '../components/SubmissionHistory';
-import ChatAi from '../components/ChatAi';
-import Editorial from '../components/Editorial';
-import Markdown from '../components/Markdown';
-import { ResultPanel, TestcasePanel } from '../components/ConsolePanels';
-import ConfirmDialog from '../components/ConfirmDialog';
+import { ThemeToggle, UserMenu } from '../components/layout/Navbar';
+import SubmissionHistory from '../components/workspace/SubmissionHistory';
+import AiChat from '../components/workspace/AiChat';
+import Editorial from '../components/workspace/Editorial';
+import Markdown from '../components/ui/Markdown';
+import { ResultPanel, TestcasePanel } from '../components/workspace/ConsolePanels';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 import VoicePanel from '../components/voice/VoicePanel';
 import VoiceDock from '../components/voice/VoiceDock';
 import { useVoiceSession } from '../hooks/useVoiceSession';
@@ -180,7 +180,7 @@ function Description({ problem, solved }) {
   );
 }
 
-const ProblemPage = () => {
+const Workspace = () => {
   const { problemId } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -388,7 +388,7 @@ const ProblemPage = () => {
           <SubmissionHistory problemId={problem._id} refreshKey={historyKey} onLoadCode={loadCode} />
         )}
         {leftTab === 'ai' && (
-          <ChatAi
+          <AiChat
             key={problem._id}
             problem={problem}
             getCode={() => code}
@@ -606,4 +606,4 @@ const ProblemPage = () => {
   );
 };
 
-export default ProblemPage;
+export default Workspace;

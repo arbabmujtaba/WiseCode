@@ -1,6 +1,6 @@
 import { Clock, VideoOff } from 'lucide-react';
-import { formatDuration } from '../lib/format';
-import { EmptyState } from './ui';
+import { formatDuration } from '../../lib/format';
+import { EmptyState } from '../ui';
 
 const Editorial = ({ secureUrl, thumbnailUrl, duration }) => {
   if (!secureUrl) {

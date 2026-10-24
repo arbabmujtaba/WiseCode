@@ -5,9 +5,9 @@ import { z } from 'zod';
 import { useDispatch, useSelector } from 'react-redux';
 import { NavLink } from 'react-router';
 import { AlertCircle, LogIn } from 'lucide-react';
-import { clearAuthError, loginUser } from '../authSlice';
-import AuthLayout from '../components/AuthLayout';
-import FormField from '../components/FormField';
+import { clearAuthError, loginUser } from '../store/authSlice';
+import AuthLayout from '../components/layout/AuthLayout';
+import FormField from '../components/ui/FormField';
 
 const loginSchema = z.object({
   emailId: z.string().trim().email('Enter a valid email'),

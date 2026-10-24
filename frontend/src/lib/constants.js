@@ -23,7 +23,7 @@ export const tagLabel = (tag) => TAG_LABELS[tag] || tag;
 
 export const DIFFICULTIES = ['easy', 'medium', 'hard'];
 
-export const DIFFICULTY_META = {
+const DIFFICULTY_META = {
   easy: { label: 'Easy', text: 'text-success', badge: 'badge-success', progress: 'progress-success' },
   medium: { label: 'Medium', text: 'text-warning', badge: 'badge-warning', progress: 'progress-warning' },
   hard: { label: 'Hard', text: 'text-error', badge: 'badge-error', progress: 'progress-error' },
@@ -45,7 +45,7 @@ export const languageById = (id) => LANGUAGES.find((l) => l.id === id) || LANGUA
 export const submissionLanguageLabel = (lang) =>
   ({ javascript: 'JavaScript', java: 'Java', 'c++': 'C++', cpp: 'C++' })[lang] || lang;
 
-export const STATUS_META = {
+const STATUS_META = {
   accepted: { label: 'Accepted', badge: 'badge-success', text: 'text-success' },
   wrong: { label: 'Wrong Answer', badge: 'badge-error', text: 'text-error' },
   error: { label: 'Error', badge: 'badge-warning', text: 'text-warning' },

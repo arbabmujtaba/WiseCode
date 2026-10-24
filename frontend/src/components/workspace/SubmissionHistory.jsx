@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Code2, FileInput, History } from 'lucide-react';
-import axiosClient, { getErrorMessage } from '../utils/axiosClient';
-import { submissionLanguageLabel } from '../lib/constants';
-import { formatDate, formatMemory, formatRuntime, timeAgo } from '../lib/format';
-import { EmptyState, ErrorState, PageSpinner, StatusBadge } from './ui';
+import axiosClient, { getErrorMessage } from '../../api/client';
+import { submissionLanguageLabel } from '../../lib/constants';
+import { formatDate, formatMemory, formatRuntime, timeAgo } from '../../lib/format';
+import { EmptyState, ErrorState, PageSpinner, StatusBadge } from '../ui';
 
 // `refreshKey` changes after each submit so the list reloads.
 const SubmissionHistory = ({ problemId, refreshKey, onLoadCode }) => {

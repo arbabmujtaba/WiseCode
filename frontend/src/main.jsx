@@ -5,8 +5,8 @@ import { Provider } from 'react-redux';
 import './index.css';
 import './hooks/useTheme'; // applies saved theme before first paint
 import App from './App.jsx';
-import { store } from './store/store.js';
-import { ToastProvider } from './components/Toast';
+import { store } from './store';
+import { ToastProvider } from './components/ui/Toast';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

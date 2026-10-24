@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import axiosClient, { getErrorMessage } from './utils/axiosClient';
+import axiosClient, { getErrorMessage } from '../api/client';
 
 // Thunks reject with plain strings so the Redux state stays serialisable.
 

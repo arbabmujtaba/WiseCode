@@ -1,8 +1,10 @@
 const express = require('express');
-const aiRouter =  express.Router();
-const userMiddleware = require("../middleware/userMiddleware");
-const solveDoubt = require('../controllers/solveDoubt');
+const { chat } = require('../controllers/ai.controller');
+const { requireUser } = require('../middleware/auth');
 
-aiRouter.post('/chat', userMiddleware, solveDoubt);
+const router = express.Router();
 
-module.exports = aiRouter;
+router.post('/chat', requireUser, chat);
+// The real-time voice tutor is a WebSocket at /ai/live (see services/ai/voiceProxy.js).
+
+module.exports = router;

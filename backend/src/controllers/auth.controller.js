@@ -1,17 +1,23 @@
-const redisClient = require('../config/redis');
-const User = require('../models/user');
-const validate = require('../utils/validator');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const redisClient = require('../config/redis');
+const User = require('../models/User');
+const { env } = require('../config/env');
+const validateRegistration = require('../utils/validateRegistration');
 
 const SESSION_SECONDS = 24 * 60 * 60;
 
 const cookieOptions = () => ({
   httpOnly: true,
-  sameSite: process.env.COOKIE_SAMESITE || 'lax',
-  secure: process.env.NODE_ENV === 'production',
+  sameSite: env.cookieSameSite,
+  secure: env.isProduction,
   maxAge: SESSION_SECONDS * 1000,
 });
+
+const clearSessionCookie = (res) => {
+  const { maxAge: _maxAge, ...opts } = cookieOptions();
+  res.clearCookie('token', opts);
+};
 
 const publicUser = (user) => ({
   firstName: user.firstName,
@@ -23,7 +29,7 @@ const publicUser = (user) => ({
 });
 
 const issueSession = (res, user) => {
-  const token = jwt.sign({ _id: user._id, emailId: user.emailId, role: user.role }, process.env.JWT_KEY, {
+  const token = jwt.sign({ _id: user._id, emailId: user.emailId, role: user.role }, env.jwtKey, {
     expiresIn: SESSION_SECONDS,
   });
   res.cookie('token', token, cookieOptions());
@@ -33,7 +39,7 @@ const duplicateEmail = (err) => err?.code === 11000;
 
 const register = async (req, res) => {
   try {
-    validate(req.body);
+    validateRegistration(req.body);
     const { firstName, lastName, emailId, password } = req.body;
 
     const user = await User.create({
@@ -76,8 +82,7 @@ const logout = async (req, res) => {
     await redisClient.set(`token:${token}`, 'Blocked');
     await redisClient.expireAt(`token:${token}`, payload.exp);
 
-    const { maxAge: _maxAge, ...opts } = cookieOptions();
-    res.clearCookie('token', opts);
+    clearSessionCookie(res);
     res.json({ message: 'Logged out successfully' });
   } catch (err) {
     res.status(503).json({ message: err.message });
@@ -87,7 +92,7 @@ const logout = async (req, res) => {
 // Admin-only: create a user or another admin.
 const adminRegister = async (req, res) => {
   try {
-    validate(req.body);
+    validateRegistration(req.body);
     const { firstName, lastName, emailId, password, role } = req.body;
 
     const user = await User.create({
@@ -108,8 +113,7 @@ const deleteProfile = async (req, res) => {
   try {
     // findByIdAndDelete triggers the findOneAndDelete hook that removes submissions.
     await User.findByIdAndDelete(req.result._id);
-    const { maxAge: _maxAge, ...opts } = cookieOptions();
-    res.clearCookie('token', opts);
+    clearSessionCookie(res);
     res.status(200).json({ message: 'Deleted successfully' });
   } catch {
     res.status(500).json({ message: 'Internal Server Error' });
@@ -120,4 +124,4 @@ const checkAuth = (req, res) => {
   res.status(200).json({ user: publicUser(req.result), message: 'Valid user' });
 };
 
-module.exports = { register, login, logout, adminRegister, deleteProfile, checkAuth, publicUser };
+module.exports = { register, login, logout, adminRegister, deleteProfile, checkAuth };

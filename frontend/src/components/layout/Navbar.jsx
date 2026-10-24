@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { LayoutDashboard, ListChecks, LogOut, Menu, Moon, Shield, Sun, User } from 'lucide-react';
-import { logoutUser } from '../authSlice';
-import { useTheme } from '../hooks/useTheme';
-import { clearProblemCache } from '../hooks/useProblems';
-import { useToast } from './Toast';
-import { Logo } from './ui';
-import Dropdown from './Dropdown';
+import { logoutUser } from '../../store/authSlice';
+import { useTheme } from '../../hooks/useTheme';
+import { clearProblemCache } from '../../hooks/useProblems';
+import { useToast } from '../ui/Toast';
+import { Logo } from '../ui';
+import Dropdown from '../ui/Dropdown';
 
 export function ThemeToggle() {
   const { isDark, toggle } = useTheme();

@@ -1,8 +1,4 @@
 const express = require('express');
-
-const problemRouter = express.Router();
-const adminMiddleware = require('../middleware/adminMiddleware');
-const userMiddleware = require('../middleware/userMiddleware');
 const {
   createProblem,
   updateProblem,
@@ -11,17 +7,20 @@ const {
   getAllProblem,
   solvedAllProblembyUser,
   submittedProblem,
-} = require('../controllers/userProblem');
+} = require('../controllers/problem.controller');
+const { requireUser, requireAdmin } = require('../middleware/auth');
+
+const router = express.Router();
 
 // Admin
-problemRouter.post('/create', adminMiddleware, createProblem);
-problemRouter.put('/update/:id', adminMiddleware, updateProblem);
-problemRouter.delete('/delete/:id', adminMiddleware, deleteProblem);
+router.post('/create', requireAdmin, createProblem);
+router.put('/update/:id', requireAdmin, updateProblem);
+router.delete('/delete/:id', requireAdmin, deleteProblem);
 
 // User
-problemRouter.get('/problemById/:id', userMiddleware, getProblemById);
-problemRouter.get('/getAllProblem', userMiddleware, getAllProblem);
-problemRouter.get('/problemSolvedByUser', userMiddleware, solvedAllProblembyUser);
-problemRouter.get('/submittedProblem/:pid', userMiddleware, submittedProblem);
+router.get('/getAllProblem', requireUser, getAllProblem);
+router.get('/problemById/:id', requireUser, getProblemById);
+router.get('/problemSolvedByUser', requireUser, solvedAllProblembyUser);
+router.get('/submittedProblem/:pid', requireUser, submittedProblem);
 
-module.exports = problemRouter;
+module.exports = router;

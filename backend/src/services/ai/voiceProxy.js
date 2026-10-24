@@ -18,27 +18,18 @@
 //         { type: 'reconnecting' } | { type: 'error', message, fatal }
 const mongoose = require('mongoose');
 const WebSocket = require('ws');
-const Problem = require('../models/problem');
-const { authenticateToken } = require('../middleware/authMiddleware');
-const { isAllowedOrigin } = require('../config/origins');
-const { buildVoicePrompt, sanitizeContext, sanitizeHistory, TOOLS } = require('./prompt');
+const Problem = require('../../models/Problem');
+const { authenticateToken } = require('../../middleware/auth');
+const { env, isAllowedOrigin } = require('../../config/env');
+const { buildVoicePrompt, sanitizeContext, sanitizeHistory, TOOLS } = require('./voicePrompt');
 
 const GEMINI_LIVE_URL =
   'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 
 const VOICES = ['Puck', 'Charon', 'Kore', 'Fenrir', 'Aoede', 'Leda', 'Orus', 'Zephyr'];
-const MAX_SESSION_MS = (Number(process.env.VOICE_MAX_MINUTES) || 15) * 60 * 1000;
 const MAX_SESSIONS_PER_USER = 2;
 const SETUP_TIMEOUT_MS = 15000;
 const TOOL_TIMEOUT_MS = 5000;
-
-const liveModels = () =>
-  [
-    process.env.GEMINI_LIVE_MODEL || 'gemini-3.1-flash-live-preview',
-    ...(process.env.GEMINI_LIVE_FALLBACK_MODEL || 'gemini-2.5-flash-native-audio-latest').split(','),
-  ]
-    .map((m) => m.trim())
-    .filter((m, i, all) => m && all.indexOf(m) === i);
 
 const activeSessions = new Map(); // userId -> count
 
@@ -80,7 +71,7 @@ class VoiceSession {
     this.ready = false;
     this.closed = false;
     this.resumeHandle = null;
-    this.models = liveModels();
+    this.models = env.gemini.liveModels;
     this.modelIndex = 0;
     this.pendingTools = new Map(); // id -> timer
     this.options = null;
@@ -105,7 +96,7 @@ class VoiceSession {
     this.lifetime = setTimeout(() => {
       this.send({ type: 'error', message: 'Voice session time limit reached. Start a new session to continue.', fatal: true });
       this.close(1000, 'time limit');
-    }, MAX_SESSION_MS);
+    }, env.gemini.voiceMaxMs);
     this.connectUpstream();
   }
 
@@ -140,7 +131,7 @@ class VoiceSession {
   connectUpstream() {
     if (this.closed) return;
     const model = this.models[this.modelIndex];
-    const upstream = new WebSocket(GEMINI_LIVE_URL, { headers: { 'x-goog-api-key': process.env.GEMINI_KEY } });
+    const upstream = new WebSocket(GEMINI_LIVE_URL, { headers: { 'x-goog-api-key': env.gemini.key } });
     this.upstream = upstream;
     this.ready = false;
     let setupDone = false;
@@ -333,14 +324,14 @@ class VoiceSession {
 }
 
 // Attaches the /ai/live WebSocket endpoint to an existing HTTP server.
-const attachLiveServer = (server) => {
+const attachVoiceServer = (server) => {
   const wss = new WebSocket.WebSocketServer({ noServer: true, maxPayload: 256 * 1024 });
 
   server.on('upgrade', async (req, socket, head) => {
     const url = new URL(req.url, 'http://localhost');
     if (url.pathname !== '/ai/live') return rejectUpgrade(socket, 404, 'Not Found');
     if (!isAllowedOrigin(req.headers.origin)) return rejectUpgrade(socket, 403, 'Forbidden origin');
-    if (!process.env.GEMINI_KEY) return rejectUpgrade(socket, 503, 'Voice tutor is not configured');
+    if (!env.gemini.key) return rejectUpgrade(socket, 503, 'Voice tutor is not configured');
 
     let user;
     try {
@@ -393,4 +384,4 @@ const attachLiveServer = (server) => {
   return wss;
 };
 
-module.exports = { attachLiveServer };
+module.exports = { attachVoiceServer };

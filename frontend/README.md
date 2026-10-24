@@ -1,84 +1,69 @@
-# Coding Practice Platform - Frontend
+# WiseCode — Frontend
 
-This is the React single-page application for a coding-practice platform. Authenticated users can browse algorithm problems, write and run code, submit against hidden test cases, review past submissions, watch editorial videos, and ask a problem-aware AI tutor for help. Administrators can create, delete, and manage problems and editorial videos.
+React 19 + Vite single-page app for WiseCode. Requires the API in [`../backend`](../backend).
 
-The API server lives in `../backend`. It must be running before the frontend can be used.
+## Quick start
+
+```bash
+npm install
+npm run dev          # http://localhost:5173
+```
+
+Use `http://localhost:5173` (not `127.0.0.1`) so the session cookie works. Set `VITE_API_URL` (see [`.env.example`](.env.example)) if the API is not at `http://localhost:3000`.
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Dev server with HMR |
+| `npm run build` | Production build into `dist/` |
+| `npm run preview` | Serve the production build |
+| `npm run lint` | ESLint |
 
 ## Stack
 
-- React 19 and Vite
-- React Router for client-side routes
-- Redux Toolkit for authentication state
-- Axios with cookie-based requests
-- Tailwind CSS and DaisyUI for styling
-- Monaco Editor for the code editor
-- React Hook Form and Zod for administrator forms
-
-## Requirements
-
-- Node.js and npm
-- A running backend service at `http://localhost:3000`
-
-The API URL defaults to `http://localhost:3000` and can be overridden with `VITE_API_URL`. The backend CORS configuration expects this Vite app to run at `http://localhost:5173`.
-
-## Run Locally
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open the URL printed by Vite, normally `http://localhost:5173`.
-
-Sign in with the seeded test accounts (create them with `npm run seed:users` in `../backend`):
-
-| Role | Email | Password |
-| --- | --- | --- |
-| User | `test@wisecode.dev` | `Test@12345` |
-| Admin | `admin@wisecode.dev` | `Admin@12345` |
-
-Set `VITE_API_URL` if the API is not at `http://localhost:3000`.
-
-Other commands:
-
-```bash
-npm run build
-npm run lint
-npm run preview
-```
+React Router 7, Redux Toolkit (auth), Axios (cookie credentials), Tailwind CSS 4 + DaisyUI 5, Monaco Editor, React Hook Form + Zod, lucide-react icons. Voice uses only browser APIs (getUserMedia, AudioWorklet, Web Audio, WebSocket).
 
 ## Features
 
-- Problem set: search, difficulty/topic/status filters (kept in the URL), sorting, pagination, solved progress, random unsolved pick
-- Workspace: resizable panes, Monaco editor (JS/Java/C++), auto-saved drafts per problem and language, font size, reset, Run (`Ctrl+'`) and Submit (`Ctrl+Enter`), per-test-case results, prev/next/random navigation
-- Left panel tabs: description, video editorial, reference solutions (hidden until solved), submission history (load old code into the editor), AI tutor with Markdown and code blocks
-- Dashboard: solved/submission/acceptance/streak stats, activity heatmap, difficulty and topic progress, recent submissions, account deletion
-- Admin: stats hub, searchable problem manager, create/edit form (verified on Judge0), delete, Cloudinary video upload/replace/remove
-- Voice tutor: hands-free real-time conversation (Voice tab or the top-bar button), live transcripts, animated waveform, barge-in interruption, mic/speaker mute, Learning vs Direct mode, voice choice, text fallback; shares history with the text AI tutor
+- **Problems:** search, difficulty/topic/status filters kept in the URL, sorting, pagination, progress, random unsolved pick
+- **Workspace:** resizable panes, Monaco editor (JavaScript/Java/C++), auto-saved drafts, Run (`Ctrl+'`) and Submit (`Ctrl+Enter`), per-test-case results, prev/next/random navigation
+- **Workspace tabs:** description, video editorial, reference solutions (hidden until solved), submission history, AI tutor chat, voice tutor
+- **Voice tutor:** hands-free conversation, live transcripts, waveform, barge-in interruption, mic/speaker mute, Learning vs Direct mode, voice choice, text fallback; shares history with the text chat
+- **Dashboard:** solved/acceptance/streak stats, activity heatmap, difficulty and topic progress, recent submissions, account deletion
+- **Admin:** stats, searchable problem manager, create/edit form, delete, Cloudinary video upload/replace/remove
 - Dark/light theme, toasts, responsive layout, keyboard-accessible dialogs and menus
+
+## Project structure
+
+```text
+src/
+  main.jsx               Providers (Redux, Router, Toasts) and root render
+  App.jsx                Session restore + route table
+  index.css              Tailwind/DaisyUI setup and the wisecode themes
+  api/client.js          Axios instance + getErrorMessage()
+  store/                 Redux store and authSlice
+  hooks/                 useProblems (shared cache), useTheme, useSplit, useVoiceSession
+  lib/                   constants (tags, languages), format helpers, voiceAudio (mic capture + playback)
+  components/
+    layout/              AppLayout, AuthLayout, Navbar, RouteGuards
+    ui/                  Shared primitives: badges/states (index), ConfirmDialog, Dropdown, FormField, Markdown, Toast
+    workspace/           AiChat, ConsolePanels, Editorial, SubmissionHistory
+    voice/               VoicePanel, VoiceDock, Waveform
+  pages/                 Login, Signup, Problems, Workspace, Dashboard, NotFound
+    admin/               AdminDashboard, AdminProblems, ProblemForm, VideoUpload
+public/
+  favicon.svg
+  worklets/pcm-capture.js   AudioWorklet: microphone -> 16 kHz PCM16
+```
 
 ## Routes
 
-| Route | Access | Purpose |
+| Route | Access | Page |
 | --- | --- | --- |
-| `/login`, `/signup` | Signed-out user | Authentication |
-| `/` | User | Problem list |
-| `/dashboard` | User | Stats and history |
-| `/problem/:problemId` | User | Coding workspace |
-| `/admin` | Admin | Admin console |
-| `/admin/problems` | Admin | Manage problems (`?view=video` for editorials) |
-| `/admin/create`, `/admin/edit/:problemId` | Admin | Problem form |
-| `/admin/upload/:problemId` | Admin | Upload a video editorial |
-
-## API Integration
-
-`src/utils/axiosClient.js` creates the shared Axios client with `withCredentials: true`, so browser requests include the session cookie. The client calls these backend areas:
-
-- `/user` for registration, login, session checks, and logout
-- `/problem` for problem lists, problem details, solved status, and submissions
-- `/submission` for running and submitting code
-- `/ai/chat` for the DSA tutor
-- `/video` for administrator editorial-video management
-
-See `../backend/README.md` for configuration requirements and the full API overview.
+| `/login`, `/signup` | Signed out | Login, Signup |
+| `/` | User | Problems |
+| `/problem/:problemId` | User | Workspace |
+| `/dashboard` | User | Dashboard |
+| `/admin` | Admin | AdminDashboard |
+| `/admin/problems` (`?view=video`) | Admin | AdminProblems |
+| `/admin/create`, `/admin/edit/:problemId` | Admin | ProblemForm |
+| `/admin/upload/:problemId` | Admin | VideoUpload |

@@ -161,7 +161,7 @@ function Transcript({ turns }) {
 
 /**
  * Full voice tutor panel (lives in the workspace's left "Voice" tab).
- * The session itself is owned by ProblemPage so it survives tab switches.
+ * The session itself is owned by the Workspace page so it survives tab switches.
  */
 export default function VoicePanel({ voice, onUseTextChat }) {
   const [text, setText] = useState('');

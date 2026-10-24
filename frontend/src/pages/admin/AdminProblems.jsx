@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { NavLink, useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight, ExternalLink, FilePlus2, Pencil, Search, Trash2, Upload, Video, VideoOff } from 'lucide-react';
-import axiosClient, { getErrorMessage } from '../utils/axiosClient';
-import { refreshProblems, useProblems } from '../hooks/useProblems';
-import { DIFFICULTIES, TAGS, difficultyMeta } from '../lib/constants';
-import { DifficultyBadge, EmptyState, ErrorState, PageSpinner, TagBadge } from '../components/ui';
-import ConfirmDialog from '../components/ConfirmDialog';
-import { useToast } from '../components/Toast';
+import axiosClient, { getErrorMessage } from '../../api/client';
+import { refreshProblems, useProblems } from '../../hooks/useProblems';
+import { DIFFICULTIES, TAGS, difficultyMeta } from '../../lib/constants';
+import { DifficultyBadge, EmptyState, ErrorState, PageSpinner, TagBadge } from '../../components/ui';
+import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import { useToast } from '../../components/ui/Toast';
 
 const PAGE_SIZE = 20;
 

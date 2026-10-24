@@ -19,7 +19,7 @@ const SPEECH_RMS = 0.04; // mic level that counts as speech
 const BARGE_IN_CHUNKS = 3; // ~120 ms of sustained speech interrupts playback locally
 const SILENCE_CHUNKS = 15; // ~600 ms of quiet ends "hearing you"
 
-// Shared with the text tutor (ChatAi) so both modes see one conversation.
+// Shared with the text tutor (AiChat) so both modes see one conversation.
 const readChat = (problemId) => {
   try {
     return JSON.parse(sessionStorage.getItem(chatKey(problemId))) || [];

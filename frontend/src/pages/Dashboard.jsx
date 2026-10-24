@@ -2,14 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { CalendarDays, CheckCircle2, Flame, History, Send, Target, Trash2 } from 'lucide-react';
-import axiosClient, { getErrorMessage } from '../utils/axiosClient';
+import axiosClient, { getErrorMessage } from '../api/client';
 import { useProblems, clearProblemCache } from '../hooks/useProblems';
-import { deleteAccount } from '../authSlice';
+import { deleteAccount } from '../store/authSlice';
 import { DIFFICULTIES, difficultyMeta, submissionLanguageLabel, tagLabel } from '../lib/constants';
 import { dayKey, formatMemory, formatRuntime, timeAgo } from '../lib/format';
 import { DifficultyBadge, EmptyState, ErrorState, PageSpinner, StatCard, StatusBadge } from '../components/ui';
-import ConfirmDialog from '../components/ConfirmDialog';
-import { useToast } from '../components/Toast';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
+import { useToast } from '../components/ui/Toast';
 
 const WEEKS = 18;
 

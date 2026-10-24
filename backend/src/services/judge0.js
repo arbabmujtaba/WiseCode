@@ -1,21 +1,22 @@
+// Judge0 CE (RapidAPI) client: runs source code against test cases.
 const axios = require('axios');
+const { env } = require('../config/env');
+const { httpError } = require('../utils/httpError');
 
 const JUDGE0_HOST = 'judge0-ce.p.rapidapi.com';
-const JUDGE0_URL = `https://${JUDGE0_HOST}/submissions/batch`;
+const BATCH_URL = `https://${JUDGE0_HOST}/submissions/batch`;
 const POLL_INTERVAL_MS = 1000;
 const MAX_POLLS = 30;
 
-const LANGUAGE_IDS = {
-  'c++': 54,
-  cpp: 54,
-  java: 62,
-  javascript: 63,
-};
+// Judge0 status_id values.
+const STATUS = { ACCEPTED: 3, WRONG_ANSWER: 4 };
+
+const LANGUAGE_IDS = { 'c++': 54, cpp: 54, java: 62, javascript: 63 };
 
 // Accepts "C++", "cpp", "Java", "JavaScript", etc.
-const getLanguageById = (lang) => LANGUAGE_IDS[String(lang || '').toLowerCase()];
+const getLanguageId = (lang) => LANGUAGE_IDS[String(lang || '').toLowerCase()];
 
-// Normalises any accepted language label to the value stored on submissions.
+// Normalises an accepted language label to the value stored on submissions.
 const normalizeLanguage = (lang) => {
   const value = String(lang || '').toLowerCase();
   if (value === 'cpp' || value === 'c++') return 'c++';
@@ -23,78 +24,57 @@ const normalizeLanguage = (lang) => {
   return null;
 };
 
-const judgeHeaders = () => ({
-  'x-rapidapi-key': process.env.JUDGE0_KEY,
-  'x-rapidapi-host': JUDGE0_HOST,
-});
+const headers = () => ({ 'x-rapidapi-key': env.judge0Key, 'x-rapidapi-host': JUDGE0_HOST });
 
-const judgeError = (error) => {
+const runnerError = (error) => {
   const status = error.response?.status;
   const detail = error.response?.data?.message || error.message;
-  const err = new Error(`Code runner unavailable${status ? ` (${status})` : ''}: ${detail}`);
-  err.statusCode = 502;
-  return err;
-};
-
-const submitBatch = async (submissions) => {
-  try {
-    const response = await axios.post(
-      JUDGE0_URL,
-      { submissions },
-      {
-        params: { base64_encoded: 'false' },
-        headers: { ...judgeHeaders(), 'Content-Type': 'application/json' },
-        timeout: 20000,
-      }
-    );
-    return response.data;
-  } catch (error) {
-    throw judgeError(error);
-  }
+  return httpError(502, `Code runner unavailable${status ? ` (${status})` : ''}: ${detail}`, { expose: true });
 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// Polls Judge0 until every submission has finished (status_id > 2).
-const submitToken = async (resultToken) => {
+const submitBatch = async (submissions) => {
+  try {
+    const { data } = await axios.post(
+      BATCH_URL,
+      { submissions },
+      { params: { base64_encoded: 'false' }, headers: { ...headers(), 'Content-Type': 'application/json' }, timeout: 20000 }
+    );
+    return data;
+  } catch (error) {
+    throw runnerError(error);
+  }
+};
+
+// Polls until every submission has finished (status_id > 2).
+const waitForResults = async (tokens) => {
   for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
     let data;
     try {
-      const response = await axios.get(JUDGE0_URL, {
-        params: { tokens: resultToken.join(','), base64_encoded: 'false', fields: '*' },
-        headers: judgeHeaders(),
+      ({ data } = await axios.get(BATCH_URL, {
+        params: { tokens: tokens.join(','), base64_encoded: 'false', fields: '*' },
+        headers: headers(),
         timeout: 20000,
-      });
-      data = response.data;
+      }));
     } catch (error) {
-      throw judgeError(error);
+      throw runnerError(error);
     }
-
-    const finished = data?.submissions?.every((r) => r && r.status_id > 2);
-    if (finished) return data.submissions;
-
+    if (data?.submissions?.every((r) => r && r.status_id > 2)) return data.submissions;
     await sleep(POLL_INTERVAL_MS);
   }
-  const err = new Error('Code execution timed out. Please try again.');
-  err.statusCode = 504;
-  throw err;
+  throw httpError(504, 'Code execution timed out. Please try again.', { expose: true });
 };
 
-// Runs source code against test cases and returns Judge0 results.
+// Runs source code against test cases and returns the Judge0 results, in order.
 const runAgainstTestCases = async (code, languageId, testCases) => {
-  const submissions = testCases.map((testcase) => ({
-    source_code: code,
-    language_id: languageId,
-    stdin: testcase.input,
-    expected_output: testcase.output,
-  }));
-  const submitResult = await submitBatch(submissions);
-  if (!Array.isArray(submitResult) || submitResult.some((s) => !s.token)) {
-    const err = new Error('Code runner rejected the submission.');
-    err.statusCode = 502;
-    throw err;
+  const submitted = await submitBatch(
+    testCases.map((tc) => ({ source_code: code, language_id: languageId, stdin: tc.input, expected_output: tc.output }))
+  );
+  if (!Array.isArray(submitted) || submitted.some((s) => !s.token)) {
+    throw httpError(502, 'Code runner rejected the submission.', { expose: true });
   }
-  return submitToken(submitResult.map((value) => value.token));
+  return waitForResults(submitted.map((s) => s.token));
 };
 
-module.exports = { getLanguageById, normalizeLanguage, submitBatch, submitToken, runAgainstTestCases };
+module.exports = { STATUS, getLanguageId, normalizeLanguage, runAgainstTestCases };

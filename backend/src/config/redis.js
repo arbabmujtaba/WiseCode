@@ -1,12 +1,13 @@
 const { createClient } = require('redis');
+const { env } = require('./env');
 
+// Stores revoked session tokens (logout block list).
 const redisClient = createClient({
-    username: process.env.REDIS_USERNAME || 'default',
-    password: process.env.REDIS_PASS,
-    socket: {
-        host: process.env.REDIS_HOST || 'redis-19934.c212.ap-south-1-1.ec2.redns.redis-cloud.com',
-        port: Number(process.env.REDIS_PORT) || 19934
-    }
+  username: env.redis.username,
+  password: env.redis.password,
+  socket: { host: env.redis.host, port: env.redis.port },
 });
+
+redisClient.on('error', (err) => console.error('Redis error:', err.message));
 
 module.exports = redisClient;

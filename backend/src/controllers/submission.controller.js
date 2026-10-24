@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
-const Problem = require('../models/problem');
-const Submission = require('../models/submission');
-const { getLanguageById, normalizeLanguage, runAgainstTestCases } = require('../utils/problemUtility');
+const Problem = require('../models/Problem');
+const Submission = require('../models/Submission');
+const { STATUS, getLanguageId, normalizeLanguage, runAgainstTestCases } = require('../services/judge0');
+const { sendError } = require('../utils/httpError');
 
 const MAX_CODE_LENGTH = 100000;
 
@@ -28,13 +29,13 @@ const summarise = (testResult) => {
   for (const test of testResult) {
     runtime += parseFloat(test.time) || 0;
     memory = Math.max(memory, test.memory || 0);
-    if (test.status_id === 3) {
+    if (test.status_id === STATUS.ACCEPTED) {
       passed++;
       continue;
     }
     if (status === 'accepted') {
       // 4 = Wrong Answer; anything else (compile error, runtime error, TLE) is an error.
-      status = test.status_id === 4 ? 'wrong' : 'error';
+      status = test.status_id === STATUS.WRONG_ANSWER ? 'wrong' : 'error';
       errorMessage =
         test.compile_output || test.stderr || test.message || test.status?.description || 'Wrong answer';
     }
@@ -65,7 +66,7 @@ const submitCode = async (req, res) => {
 
     let summary;
     try {
-      const testResult = await runAgainstTestCases(code, getLanguageById(language), problem.hiddenTestCases);
+      const testResult = await runAgainstTestCases(code, getLanguageId(language), problem.hiddenTestCases);
       summary = summarise(testResult);
     } catch (err) {
       submission.status = 'error';
@@ -98,7 +99,7 @@ const submitCode = async (req, res) => {
       submissionId: submission._id,
     });
   } catch (err) {
-    res.status(err.statusCode || 500).json({ message: err.message || 'Internal Server Error' });
+    sendError(res, err);
   }
 };
 
@@ -111,7 +112,7 @@ const runCode = async (req, res) => {
     const problem = await Problem.findById(problemId).select('visibleTestCases');
     if (!problem) return res.status(404).json({ message: 'Problem not found' });
 
-    const testResult = await runAgainstTestCases(code, getLanguageById(language), problem.visibleTestCases);
+    const testResult = await runAgainstTestCases(code, getLanguageId(language), problem.visibleTestCases);
     const summary = summarise(testResult);
 
     res.status(201).json({
@@ -135,7 +136,7 @@ const runCode = async (req, res) => {
       })),
     });
   } catch (err) {
-    res.status(err.statusCode || 500).json({ message: err.message || 'Internal Server Error' });
+    sendError(res, err);
   }
 };
 
@@ -150,8 +151,8 @@ const submissionHistory = async (req, res) => {
       .populate({ path: 'problemId', select: '_id title difficulty tags' })
       .lean();
     res.status(200).json(submissions);
-  } catch {
-    res.status(500).json({ message: 'Unable to load submissions' });
+  } catch (err) {
+    sendError(res, err);
   }
 };
 

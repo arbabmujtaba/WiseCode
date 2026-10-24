@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const {Schema} = mongoose;
 
-// Keep in sync with frontend/src/lib/constants.js
+// Keep in sync with frontend/src/lib/constants.js (TAGS)
 const PROBLEM_TAGS = [
     'array', 'string', 'linkedList', 'stack', 'tree', 'graph', 'dp', 'greedy',
     'heap', 'math', 'sorting', 'binarySearch', 'twoPointers', 'slidingWindow',

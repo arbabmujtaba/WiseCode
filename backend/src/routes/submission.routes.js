@@ -1,10 +1,11 @@
 const express = require('express');
-const submitRouter = express.Router();
-const userMiddleware = require('../middleware/userMiddleware');
-const { submitCode, runCode, submissionHistory } = require('../controllers/userSubmission');
+const { submitCode, runCode, submissionHistory } = require('../controllers/submission.controller');
+const { requireUser } = require('../middleware/auth');
 
-submitRouter.post('/submit/:id', userMiddleware, submitCode);
-submitRouter.post('/run/:id', userMiddleware, runCode);
-submitRouter.get('/history', userMiddleware, submissionHistory);
+const router = express.Router();
 
-module.exports = submitRouter;
+router.post('/run/:id', requireUser, runCode);
+router.post('/submit/:id', requireUser, submitCode);
+router.get('/history', requireUser, submissionHistory);
+
+module.exports = router;

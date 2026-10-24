@@ -1,44 +1,34 @@
 const mongoose = require('mongoose');
-const { getLanguageById, runAgainstTestCases } = require('../utils/problemUtility');
-const Problem = require('../models/problem');
-const User = require('../models/user');
-const Submission = require('../models/submission');
-const SolutionVideo = require('../models/solutionVideo');
-
-const sendError = (res, err, fallback = 500) =>
-  res.status(err.statusCode || fallback).json({ message: err.message || 'Internal Server Error' });
+const { STATUS, getLanguageId, runAgainstTestCases } = require('../services/judge0');
+const Problem = require('../models/Problem');
+const User = require('../models/User');
+const Submission = require('../models/Submission');
+const SolutionVideo = require('../models/SolutionVideo');
+const { httpError, sendError } = require('../utils/httpError');
 
 // Runs every reference solution against the visible test cases; throws if any fails.
 const verifyReferenceSolutions = async (referenceSolution, visibleTestCases) => {
   if (!Array.isArray(referenceSolution) || !referenceSolution.length) {
-    const err = new Error('At least one reference solution is required');
-    err.statusCode = 400;
-    throw err;
+    throw httpError(400, 'At least one reference solution is required');
   }
   if (!Array.isArray(visibleTestCases) || !visibleTestCases.length) {
-    const err = new Error('At least one visible test case is required');
-    err.statusCode = 400;
-    throw err;
+    throw httpError(400, 'At least one visible test case is required');
   }
 
   for (const { language, completeCode } of referenceSolution) {
-    const languageId = getLanguageById(language);
-    if (!languageId) {
-      const err = new Error(`Unsupported language: ${language}`);
-      err.statusCode = 400;
-      throw err;
-    }
+    const languageId = getLanguageId(language);
+    if (!languageId) throw httpError(400, `Unsupported language: ${language}`);
     const results = await runAgainstTestCases(completeCode, languageId, visibleTestCases);
-    const failed = results.findIndex((t) => t.status_id !== 3);
+    const failed = results.findIndex((t) => t.status_id !== STATUS.ACCEPTED);
     if (failed !== -1) {
       const t = results[failed];
-      const err = new Error(
-        `${language} reference solution failed visible test ${failed + 1}: ${
-          t.status?.description || 'Wrong Answer'
-        }${t.compile_output || t.stderr ? ` - ${(t.compile_output || t.stderr).slice(0, 300)}` : ''}`
+      const detail = t.compile_output || t.stderr;
+      throw httpError(
+        400,
+        `${language} reference solution failed visible test ${failed + 1}: ${t.status?.description || 'Wrong Answer'}${
+          detail ? ` - ${detail.slice(0, 300)}` : ''
+        }`
       );
-      err.statusCode = 400;
-      throw err;
     }
   }
 };
@@ -160,8 +150,8 @@ const solvedAllProblembyUser = async (req, res) => {
       select: '_id title difficulty tags',
     });
     res.status(200).json((user?.problemSolved || []).filter(Boolean));
-  } catch {
-    res.status(500).json({ message: 'Server Error' });
+  } catch (err) {
+    sendError(res, err);
   }
 };
 
@@ -174,8 +164,8 @@ const submittedProblem = async (req, res) => {
       .sort({ createdAt: -1 })
       .lean();
     res.status(200).json(submissions);
-  } catch {
-    res.status(500).json({ message: 'Internal Server Error' });
+  } catch (err) {
+    sendError(res, err);
   }
 };
 

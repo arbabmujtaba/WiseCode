@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 
 const KEY = 'wisecode-theme';
-export const DARK = 'wisecode';
-export const LIGHT = 'wisecode-light';
+const DARK = 'wisecode';
+const LIGHT = 'wisecode-light';
 
 const initialTheme = () => {
   const saved = localStorage.getItem(KEY);

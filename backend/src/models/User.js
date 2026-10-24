@@ -21,11 +21,6 @@ const userSchema = new Schema({
         lowercase:true,
         immutable: true,
     },
-    age:{
-        type:Number,
-        min:6,
-        max:80,
-    },
     role:{
         type:String,
         enum:['user','admin'],

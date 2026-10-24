@@ -1,5 +1,5 @@
 import { Bot, CheckCircle2, Code2, PlayCircle, Trophy } from 'lucide-react';
-import { Logo } from './ui';
+import { Logo } from '../ui';
 import { ThemeToggle } from './Navbar';
 
 const FEATURES = [

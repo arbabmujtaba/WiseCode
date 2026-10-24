@@ -39,7 +39,7 @@ function ProgressRing({ value, total }) {
   );
 }
 
-function Homepage() {
+function Problems() {
   const { user } = useSelector((s) => s.auth);
   const { problems, solved, loading, error, reload } = useProblems();
   const [params, setParams] = useSearchParams();
@@ -287,4 +287,4 @@ function Homepage() {
   );
 }
 
-export default Homepage;
+export default Problems;

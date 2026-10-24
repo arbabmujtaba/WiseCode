@@ -4,11 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { NavLink, useNavigate, useParams } from 'react-router';
 import { AlertCircle, Eye, EyeOff, Plus, Save, Trash2 } from 'lucide-react';
-import axiosClient, { getErrorMessage } from '../utils/axiosClient';
-import { refreshProblems } from '../hooks/useProblems';
-import { DIFFICULTIES, TAGS, difficultyMeta } from '../lib/constants';
-import { ErrorState, PageSpinner } from '../components/ui';
-import { useToast } from '../components/Toast';
+import axiosClient, { getErrorMessage } from '../../api/client';
+import { refreshProblems } from '../../hooks/useProblems';
+import { DIFFICULTIES, TAGS, difficultyMeta } from '../../lib/constants';
+import { ErrorState, PageSpinner } from '../../components/ui';
+import { useToast } from '../../components/ui/Toast';
 
 const CODE_LANGS = ['C++', 'Java', 'JavaScript'];
 const required = (label) => z.string().trim().min(1, `${label} is required`);

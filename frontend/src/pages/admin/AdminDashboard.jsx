@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { NavLink } from 'react-router';
 import { FilePlus2, Library, ListChecks, Video, Settings2 } from 'lucide-react';
-import { useProblems } from '../hooks/useProblems';
-import { DIFFICULTIES, difficultyMeta } from '../lib/constants';
-import { ErrorState, PageSpinner, StatCard } from '../components/ui';
+import { useProblems } from '../../hooks/useProblems';
+import { DIFFICULTIES, difficultyMeta } from '../../lib/constants';
+import { ErrorState, PageSpinner, StatCard } from '../../components/ui';
 
 const ACTIONS = [
   {
@@ -29,7 +29,7 @@ const ACTIONS = [
   },
 ];
 
-function Admin() {
+function AdminDashboard() {
   const { problems, loading, error, reload } = useProblems();
 
   const counts = useMemo(() => {
@@ -86,4 +86,4 @@ function Admin() {
   );
 }
 
-export default Admin;
+export default AdminDashboard;

@@ -2,15 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { NavLink, useParams } from 'react-router';
 import { CheckCircle2, FileVideo, UploadCloud, X } from 'lucide-react';
-import axiosClient, { getErrorMessage } from '../utils/axiosClient';
-import { refreshProblems } from '../hooks/useProblems';
-import { formatDuration, formatFileSize } from '../lib/format';
-import { DifficultyBadge } from '../components/ui';
-import { useToast } from '../components/Toast';
+import axiosClient, { getErrorMessage } from '../../api/client';
+import { refreshProblems } from '../../hooks/useProblems';
+import { formatDuration, formatFileSize } from '../../lib/format';
+import { DifficultyBadge } from '../../components/ui';
+import { useToast } from '../../components/ui/Toast';
 
 const MAX_BYTES = 100 * 1024 * 1024;
 
-function AdminUpload() {
+function VideoUpload() {
   const { problemId } = useParams();
   const toast = useToast();
   const inputRef = useRef(null);
@@ -175,4 +175,4 @@ function AdminUpload() {
   );
 }
 
-export default AdminUpload;
+export default VideoUpload;

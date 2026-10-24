@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bot, Eraser, Send, Sparkles, User } from 'lucide-react';
-import axiosClient, { getErrorMessage } from '../utils/axiosClient';
-import Markdown from './Markdown';
+import axiosClient, { getErrorMessage } from '../../api/client';
+import Markdown from '../ui/Markdown';
 
 const SUGGESTIONS = [
   'Give me a hint without spoiling the solution',
@@ -13,7 +13,7 @@ const SUGGESTIONS = [
 const storageKey = (id) => `wisecode:chat:${id}`;
 
 // Problem-aware AI tutor. Sends the conversation, problem id and current editor code.
-function ChatAi({ problem, getCode, language, initialPrompt, onPromptSent }) {
+function AiChat({ problem, getCode, language, initialPrompt, onPromptSent }) {
   const [messages, setMessages] = useState(() => {
     try {
       return JSON.parse(sessionStorage.getItem(storageKey(problem._id))) || [];
@@ -174,4 +174,4 @@ function ChatAi({ problem, getCode, language, initialPrompt, onPromptSent }) {
   );
 }
 
-export default ChatAi;
+export default AiChat;

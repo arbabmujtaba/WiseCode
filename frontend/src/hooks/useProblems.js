@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import axiosClient, { getErrorMessage } from '../utils/axiosClient';
+import axiosClient, { getErrorMessage } from '../api/client';
 
 // Small shared cache so the problem list and solved set are fetched once per session
 // and reused across pages (list, dashboard, workspace navigation, admin).

@@ -1,13 +1,8 @@
-const cloudinary = require('cloudinary').v2;
 const mongoose = require('mongoose');
-const Problem = require('../models/problem');
-const SolutionVideo = require('../models/solutionVideo');
-
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const cloudinary = require('../config/cloudinary');
+const Problem = require('../models/Problem');
+const SolutionVideo = require('../models/SolutionVideo');
+const { env } = require('../config/env');
 
 const generateUploadSignature = async (req, res) => {
   try {
@@ -21,16 +16,16 @@ const generateUploadSignature = async (req, res) => {
     const publicId = `leetcode-solutions/${problemId}/${req.result._id}_${timestamp}`;
     const signature = cloudinary.utils.api_sign_request(
       { timestamp, public_id: publicId },
-      process.env.CLOUDINARY_API_SECRET
+      env.cloudinary.apiSecret
     );
 
     res.json({
       signature,
       timestamp,
       public_id: publicId,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      upload_url: `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/video/upload`,
+      api_key: env.cloudinary.apiKey,
+      cloud_name: env.cloudinary.cloudName,
+      upload_url: `https://api.cloudinary.com/v1_1/${env.cloudinary.cloudName}/video/upload`,
     });
   } catch (error) {
     console.error('Error generating upload signature:', error);

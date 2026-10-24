@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router';
 import { AlertCircle, Inbox, RotateCw } from 'lucide-react';
-import { difficultyMeta, statusMeta, tagLabel } from '../lib/constants';
+import { difficultyMeta, statusMeta, tagLabel } from '../../lib/constants';
 
 export function Logo({ to = '/', size = 'md' }) {
   const big = size === 'lg';

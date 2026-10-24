@@ -1,9 +1,8 @@
-import { Navigate, Outlet, useLocation } from 'react-router';
-import { useSelector } from 'react-redux';
+import { Outlet } from 'react-router';
 import Navbar from './Navbar';
 
 // Standard page chrome: sticky navbar + centred content.
-export function AppLayout() {
+export default function AppLayout() {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
@@ -15,26 +14,4 @@ export function AppLayout() {
       </footer>
     </div>
   );
-}
-
-export function RequireAuth({ children }) {
-  const { isAuthenticated } = useSelector((s) => s.auth);
-  const location = useLocation();
-  if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
-  return children ?? <Outlet />;
-}
-
-export function RequireAdmin({ children }) {
-  const { isAuthenticated, user } = useSelector((s) => s.auth);
-  const location = useLocation();
-  if (!isAuthenticated) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
-  if (user?.role !== 'admin') return <Navigate to="/" replace />;
-  return children ?? <Outlet />;
-}
-
-export function GuestOnly({ children }) {
-  const { isAuthenticated } = useSelector((s) => s.auth);
-  const location = useLocation();
-  if (isAuthenticated) return <Navigate to={location.state?.from || '/'} replace />;
-  return children;
 }

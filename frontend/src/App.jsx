@@ -1,18 +1,19 @@
 import { useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { useDispatch, useSelector } from 'react-redux';
-import { checkAuth } from './authSlice';
-import { AppLayout, GuestOnly, RequireAdmin, RequireAuth } from './components/Layout';
+import { checkAuth } from './store/authSlice';
+import AppLayout from './components/layout/AppLayout';
+import { GuestOnly, RequireAdmin, RequireAuth } from './components/layout/RouteGuards';
 import { PageSpinner } from './components/ui';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import Homepage from './pages/Homepage';
+import Problems from './pages/Problems';
 import Dashboard from './pages/Dashboard';
-import ProblemPage from './pages/ProblemPage';
-import Admin from './pages/Admin';
-import AdminProblems from './pages/AdminProblems';
-import ProblemForm from './pages/ProblemForm';
-import AdminUpload from './pages/AdminUpload';
+import Workspace from './pages/Workspace';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminProblems from './pages/admin/AdminProblems';
+import ProblemForm from './pages/admin/ProblemForm';
+import VideoUpload from './pages/admin/VideoUpload';
 import NotFound from './pages/NotFound';
 
 function App() {
@@ -38,18 +39,18 @@ function App() {
       <Route path="/signup" element={<GuestOnly><Signup /></GuestOnly>} />
 
       {/* Full-screen coding workspace */}
-      <Route path="/problem/:problemId" element={<RequireAuth><ProblemPage /></RequireAuth>} />
+      <Route path="/problem/:problemId" element={<RequireAuth><Workspace /></RequireAuth>} />
 
       <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
-        <Route index element={<Homepage />} />
+        <Route index element={<Problems />} />
         <Route path="dashboard" element={<Dashboard />} />
 
         <Route path="admin" element={<RequireAdmin />}>
-          <Route index element={<Admin />} />
+          <Route index element={<AdminDashboard />} />
           <Route path="problems" element={<AdminProblems />} />
           <Route path="create" element={<ProblemForm key="create" />} />
           <Route path="edit/:problemId" element={<ProblemForm key="edit" />} />
-          <Route path="upload/:problemId" element={<AdminUpload />} />
+          <Route path="upload/:problemId" element={<VideoUpload />} />
           {/* Legacy admin URLs */}
           <Route path="update" element={<Navigate to="/admin/problems" replace />} />
           <Route path="delete" element={<Navigate to="/admin/problems" replace />} />
